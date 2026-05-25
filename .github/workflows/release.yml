@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+# Actions runner'larının Node 20 → 24 geçişi (Eylül 2026'ya kadar opt-in).
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     name: ${{ matrix.os }}-${{ matrix.arch }}
