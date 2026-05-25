@@ -154,8 +154,22 @@ func depInstallCommand(bin string) (*exec.Cmd, string) {
 		case "darwin":
 			return exec.Command("brew", "install", "node"), "brew install node"
 		case "linux":
-			return exec.Command("sudo", "apt-get", "install", "-y", "nodejs", "npm"),
-				"sudo apt-get install -y nodejs npm"
+			// Distro paketleri eski (Ubuntu 18.04 → Node 8). Claude Code Node 18+ ister.
+			// NodeSource LTS setup script'iyle güncel Node kuruyoruz.
+			if _, err := exec.LookPath("apt-get"); err == nil {
+				return exec.Command("sh", "-c",
+						"curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs"),
+					"NodeSource LTS + apt-get install nodejs"
+			}
+			if _, err := exec.LookPath("dnf"); err == nil {
+				return exec.Command("sh", "-c",
+						"curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo -E bash - && sudo dnf install -y nodejs"),
+					"NodeSource LTS + dnf install nodejs"
+			}
+			if _, err := exec.LookPath("pacman"); err == nil {
+				return exec.Command("sudo", "pacman", "-S", "--noconfirm", "nodejs", "npm"),
+					"sudo pacman -S nodejs npm"
+			}
 		}
 	case "python", "python3":
 		switch runtime.GOOS {
