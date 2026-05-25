@@ -15,8 +15,8 @@ import (
 // cemi update agy → sadece agy güncelle
 
 var cemiRootCmd = &cobra.Command{
-	Use:     "cemi [araç]",
-	Short:   "AI araçlarını yükle",
+	Use:     "cemi [tool]",
+	Short:   "Install AI CLI tools",
 	Version: version,
 	Args:    cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {

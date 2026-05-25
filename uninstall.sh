@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # ⚡ CEM — Kaldırma Scripti
-# curl -fsSL cem.pw/uninstall | sh
+# curl -fsSL cem.pw/uninstall.sh | sh
 
 set -e
 
@@ -116,7 +116,7 @@ if [ "$REMOVED" -gt 0 ]; then
 DONE
     printf "${reset}\n"
     printf "  Yeniden kurmak için:\n\n"
-    printf "  ${cyan}curl -fsSL cem.pw/install | sh${reset}\n\n"
+    printf "  ${cyan}curl -fsSL cem.pw/install.sh | sh${reset}\n\n"
 else
     printf "${yellow}  ⚠  Binary silinemedi.${reset}\n"
     printf "  ${dim}Manuel kaldır:${reset}\n"

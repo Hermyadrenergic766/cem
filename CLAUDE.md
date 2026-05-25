@@ -1,147 +1,169 @@
 # CLAUDE.md — cem
 
-> Bu dosya bu projeye özgüdür ve **global `~/.claude/CLAUDE.md` kurallarının üstüne yazar**. Aşağıdaki kurallar mutlaktır; global kurallarla çelişen her madde için bu dosya geçerlidir.
+> This file is project-specific and **overrides the global
+> `~/.claude/CLAUDE.md`**. Where the two conflict, this file wins.
+> Turkish version: [CLAUDE.tr.md](CLAUDE.tr.md).
 
 ---
 
-## Proje Özeti
+## Project Summary
 
-**CEM** — Birden fazla AI CLI aracını (Claude, Agy, Aider, Gemini, GPT) tek
-komutla yöneten Go orchestrator'dır. "Thinker" düşünür, "Writer" yazar; pair
-modunda thinker çıktısı writer'a beslenir.
+**CEM — Compose · Execute · Multiplex.** A Go orchestrator that drives
+multiple AI CLIs (Claude, Antigravity, Aider, Gemini, Codex, Goose, Cody,
+Continue, OpenHands, Cursor) from a single command. A "thinker" AI reasons,
+a "writer" AI emits code; in `pair` mode the thinker's output is fed into
+the writer.
 
 - **Domain:** `cem.pw`
-- **Git:** `http://gitlab.makdos.biz/makdos/cem.git`
-- **Dil:** Go 1.25 (cobra + lipgloss + yaml.v3)
-- **Binary:** 3 ad — `cem`, `cemi` (installer), `cemir` (remover). Hepsi
-  aynı kaynaktan derlenir, `main.go` binary adına göre dispatch yapar.
+- **Git:** `https://github.com/muslu/cem.git` (canonical)
+- **Language:** Go 1.25 (cobra + lipgloss + yaml.v3)
+- **Binaries:** three names built from one source — `cem`, `cemi`
+  (installer), `cemir` (remover). `main.go` dispatches based on the
+  invoked binary name.
 
 ---
 
-## Global Kurallarla Farklılaşan Noktalar
+## Differences from the Global Guide
 
-Global `~/.claude/CLAUDE.md` Python + PostgreSQL + FastAPI + nginx merkezli.
-Bu proje **Go CLI**'dır → aşağıdaki global maddeler **uygulanmaz**:
+Global `~/.claude/CLAUDE.md` is centred on Python + PostgreSQL + FastAPI +
+nginx. This project is a **Go CLI**, so the following global rules **do
+not apply**:
 
-| Global madde | Sebep |
+| Global rule | Why it doesn't apply |
 |---|---|
-| Pydantic / `.env` / Fernet | CLI; secret yok, config = YAML |
-| FastAPI middleware / Server-Timing | API değil |
-| PostgreSQL / MongoDB / Valkey | Veri katmanı yok |
-| Cache dekoratörü / rate limit | İlgisiz |
-| Swagger UI / `src/swagger.py` | API değil |
+| Pydantic / `.env` / Fernet | No secrets at runtime; config is YAML |
+| FastAPI middleware / Server-Timing | Not an API |
+| PostgreSQL / MongoDB / Valkey | No data layer |
+| Cache decorator / rate limit | Not relevant |
+| Swagger UI / `src/swagger.py` | Not an API |
 
-**Uygulanır:** Docker yasağı (bare-metal binary), `nala` zorunluluğu, nginx
-production standartları (HTTP/3, Server header, fail2ban) — `cem.pw` sunucusu için.
+**Still applies:** Docker ban (bare-metal binaries), `nala` over `apt`,
+nginx production standards (HTTP/3, custom `Server` header, fail2ban) for
+the `cem.pw` host.
 
 ---
 
-## Dosya Yapısı
+## File Layout
 
 ```
 cem/
-├── main.go             — Binary adına göre dispatch + LDFLAGS version
+├── main.go             — Binary-name dispatch + LDFLAGS version
 ├── config.go           — GlobalConfig + ProjectConfig + ResolvedConfig + KnownTools
-├── config_test.go      — ActiveRoles override + KnownTools sanity (5 test)
+├── config_test.go      — ActiveRoles override + KnownTools sanity (8 tests)
 ├── executor.go         — ModeThink/Write/Pair + Run + ReadStdin
-├── spinner.go          — TTY-aware tek satır spinner (pair modu için)
+├── spinner.go          — TTY-aware single-line spinner (pair mode)
 ├── history.go          — AppendHistory → ~/.cem/history.log (TSV)
 ├── wizard.go           — RunSetupWizard, InstallTool, RemoveTool, ShowRoles, askYN
 ├── banner.go           — ASCII art + lipgloss styles + ShowConfigSource
-├── cmd_cem.go          — Cobra: rootCmd, rolesCmd, setupCmd, initCmd, statusCmd
-├── cmd_doctor.go       — cem doctor: tanı raporu (sistem/roller/araçlar/PATH)
-├── cmd_history.go      — cem history: -n N, --clear
-├── cmd_cemi.go         — cemi: tool kurulumu (claude/agy/aider/gemini/gpt + all + update)
-├── cmd_cemir.go        — cemir: tool kaldırma (tek araç + all)
-├── cmd_uninstall.go    — cem uninstall: kendini sil
-├── .gitlab-ci.yml      — Canonical CI: test + 7 platform × 3 binary release
-├── install.sh / .ps1   — cem.pw/install üzerinden kurulum
-├── uninstall.sh / .ps1 — cem.pw/uninstall üzerinden kaldırma
+├── cmd_cem.go          — Cobra root + rolesCmd, setupCmd, initCmd, statusCmd
+├── cmd_doctor.go       — `cem doctor`: diagnostic report
+├── cmd_history.go      — `cem history`: -n N, --clear
+├── cmd_cemi.go         — `cemi`: install tools (10 known) + all + update
+├── cmd_cemir.go        — `cemir`: remove tools (single + all)
+├── cmd_uninstall.go    — `cem uninstall`: remove the binaries themselves
+├── install.sh / .ps1   — User-facing installer via cem.pw/install
+├── uninstall.sh / .ps1 — User-facing uninstaller via cem.pw/uninstall
 ├── Makefile            — build / dev / install / clean / tidy / test
-├── go.mod
-├── .github/workflows/release.yml  — 7 platform binary + SHA256SUMS
+├── go.mod / go.sum
+├── .github/workflows/release.yml  — 7-platform binaries + SHA256SUMS
+├── .gitlab-ci.yml      — Optional mirror CI (kept; canonical is GitHub)
 ├── nginx/
 │   ├── nginx.conf
 │   ├── setup.sh
-│   ├── snippets/        — ssl.conf, security-headers.conf, block-rules.conf
-│   ├── sites-available/ — cem.pw.conf (rotalar: /install /uninstall /r/* /docs /health)
-│   └── fail2ban/jail.d/ — cem-nginx.conf
-├── OPERATIONS.md
-├── README.md
-└── todo.md             — Açık görev listesi
+│   ├── snippets/        ssl.conf, security-headers.conf, block-rules.conf
+│   ├── sites-available/ cem.pw.conf (routes: /install /uninstall /r/* /docs /health)
+│   └── fail2ban/jail.d/ cem-nginx.conf
+├── README.md / README.tr.md
+├── CLAUDE.md / CLAUDE.tr.md
+├── OPERATIONS.md / OPERATIONS.tr.md
+└── todo.md / todo.tr.md
 ```
 
 ---
 
-## Kod Kuralları
+## Coding Conventions
 
-1. **`package main`** — tek paket. Alt paket açma (gerekmedikçe).
-2. **Logger yok** — kullanıcıya `fmt.Println` + lipgloss style (`styleSuccess`,
-   `styleError`, `styleDim`, `styleBold` — `wizard.go`'da tanımlı).
-3. **Hata mesajları Türkçe** — `styleError.Render("✗ ...")`. Stack trace gösterme.
-4. **`exec.Command` ile araç çalıştır** — stdin: input, stdout/stderr: passthrough.
-   Pair modunda `cmd.Output()` ile çıktıyı yakala.
-5. **Config IO:** `~/.cem/config.yaml` permission `0600`, dir `0755`.
-6. **YAML marshal:** `gopkg.in/yaml.v3`. Tag'ler küçük harf snake_case.
-7. **Yeni AI aracı eklemek:** `KnownTools` map'ine `ToolMeta` ekle, başka yere
-   dokunma — wizard, installer, executor otomatik kullanır.
-8. **Cobra subcommand eklemek:** yeni dosya `cmd_<name>.go`, `rootCmd.AddCommand`
-   çağrısı `cmd_cem.go`'nun `init()` bloğuna.
-9. **Banner sadece help / setup / status / cemi-no-args / cemir-no-args'da
-   görünür** — normal komut çıktısında değil.
-10. **Build:** her zaman 3 binary üret. Geliştirmede `make build` yeter;
-    sistem-wide kurulum için `make install` (sudo).
+1. **`package main`** — single package; do not split into subpackages
+   unless required.
+2. **No logger** — write to the user with `fmt.Println` + lipgloss styles
+   (`styleSuccess`, `styleError`, `styleDim`, `styleBold`, declared in
+   `wizard.go`).
+3. **User-visible error messages are in Turkish** —
+   `styleError.Render("✗ ...")`. Do not show stack traces.
+   `fmt.Errorf` strings may be English for debugging.
+4. **Subprocess for AI tools** — use `exec.Command`. Stdin: input,
+   stdout/stderr: passthrough. In pair mode use `cmd.Output()` to capture.
+5. **Config IO** — `~/.cem/config.yaml` file mode `0600`, directory
+   `0755`.
+6. **YAML marshalling** — `gopkg.in/yaml.v3`. Lowercase snake_case tags.
+7. **Adding an AI tool** — append a `ToolMeta` to `KnownTools` and a key
+   to `orderedToolKeys`. Do not touch the installer/remover/wizard; they
+   read the map automatically.
+8. **Adding a Cobra subcommand** — create `cmd_<name>.go` with its own
+   `init()` that calls `rootCmd.AddCommand(...)`. Avoid touching
+   `cmd_cem.go`'s init block.
+9. **Banner** appears only on `help` / `setup` / `status` / `cemi` (no
+   args) / `cemir` (no args) — never on a normal command run.
+10. **Build** — always produce all three binaries. `make build` for local
+    dev; `make install` (sudo) for system-wide.
 
 ---
 
-## Yasaklar (bu proje)
+## Bans (for this project)
 
-- **Docker / docker-compose ekleme** — bare-metal binary.
-- **Python köprüsü yazma** — saf Go. AI CLI'ları subprocess olarak çağrılır.
-- **Versiyon dosyası ayrı tutma** — sürüm `cmd_cem.go`'da `Version: "1.0.0"`.
-- **`go run main.go`** — main.go diğer dosyalara bağımlı. `go run .` kullan.
-- **Binary adı değiştirme** — `cem` / `cemi` / `cemir` sabit. `main.go` dispatch
-  bunlara bağlı; değişirse install.sh ve release.yml kırılır.
-- **`fmt.Errorf` mesajları İngilizce** olabilir (debug için), ama kullanıcıya
-  gösterilen `styleError.Render(...)` Türkçe.
+- **No Docker / docker-compose** — bare-metal binaries only.
+- **No Python bridge** — pure Go. AI CLIs are invoked as subprocesses.
+- **No separate version file** — version is injected at build time from
+  `git describe --tags --always --dirty` via `LDFLAGS -X main.version`.
+- **No `go run main.go`** — `main.go` depends on the rest of the package;
+  use `go run .`.
+- **Do not rename binaries** — `cem` / `cemi` / `cemir` are fixed.
+  `main.go`'s dispatch and the install scripts depend on those names.
+- **User-facing strings in Turkish; code-internal strings may be
+  English.** Match the surrounding context.
 
 ---
 
 ## Git & Release
 
-- **Canonical repo:** `http://gitlab.makdos.biz/makdos/cem.git`
-- **GitHub mirror:** Sadece release.yml çalıştırmak için (Actions GitLab CI'a
-  taşınana kadar). Tag `v*.*.*` push edildiğinde 7 platform binary üretir.
-- **Binary download:** `cem.pw/r/*` → nginx proxy. Install script'leri bu URL'i
-  kullanır, doğrudan GitHub/GitLab release URL'ine bağımlı değildir.
-- **Tag formatı:** `v1.2.3` (semver). `make` ile `LDFLAGS` versiyon enjeksiyonu
-  henüz yok — eklenecekse `-X main.version=...` ile.
+- **Canonical repo:** `https://github.com/muslu/cem.git`
+- **Mirror:** `.gitlab-ci.yml` kept in tree in case the project is mirrored
+  to a self-hosted GitLab. It will only run if pushed there.
+- **Binary downloads:**
+  `install.sh` / `install.ps1` pull directly from
+  `github.com/muslu/cem/releases/latest/download/...`. The `cem.pw/r/*`
+  nginx route proxies the same URL for older scripts.
+- **Tags:** `vMAJOR.MINOR.PATCH` (semver). `LDFLAGS -X main.version=...`
+  is set by both Makefile and CI.
 
 ---
 
-## Test / Doğrulama Akışı
+## Validation Flow
 
 ```sh
 make clean && make build
-./build/cem --help          # banner + komut listesi
-./build/cemi                # araç listesi (banner ile)
-./build/cemir               # kurulu araçlar (banner ile)
-./build/cem roles           # config kaynak + aktif roller
+./build/cem --help      # banner + command list
+./build/cem doctor      # diagnostic report
+./build/cemi            # tool list (banner included)
+./build/cemir           # installed-tools list (banner included)
+./build/cem roles       # active roles + config source
+go test ./...           # 8 tests, all should pass
 ```
 
-İlk çalıştırmada wizard açılır; `~/.cem/config.yaml` oluşur. Test dizininde
-`.cem.yaml` ile proje override edilir.
+The first run launches a wizard and creates `~/.cem/config.yaml`. Inside a
+test directory, a `.cem.yaml` file overrides the global config.
 
 ---
 
-## Bilinen Eksikler
+## Known Gaps
 
-`todo.md` güncel listeyi tutar. Açık başlıklar:
-- `.claude/agents/` ve `.claude/skills/` `autoinstalltrixie` kalıntısı —
-  silme/değiştirme kararı bekliyor (`.claude/` gitignore'lı).
-- Daha kapsamlı testler: `executor_test.go`, `history_test.go` yok.
-- macOS/Linux/Windows entegrasyon testleri yok.
+`todo.md` is the live list. Open items:
+- `.claude/agents/` and `.claude/skills/` are leftovers from the
+  `autoinstalltrixie` project; the cleanup decision is still pending.
+  `.claude/` is gitignored so they don't enter the repo.
+- Broader test coverage: no `executor_test.go` or `history_test.go`.
+- No macOS/Linux/Windows integration tests.
 
 ---
 
-*Bu CLAUDE.md değişirse `todo.md`'ye "doc:CLAUDE update" satırı eklenir.*
+*If this CLAUDE.md changes, add a `doc:CLAUDE update` line to `todo.md`.*

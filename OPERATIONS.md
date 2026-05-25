@@ -1,68 +1,67 @@
 ##############################################################################
-# /etc/nginx/  →  cem.pw Operasyon Rehberi
+# /etc/nginx/  →  cem.pw Operations Runbook
 ##############################################################################
+# Turkish version: OPERATIONS.tr.md
 
 ## TEST & RELOAD
-nginx -t                                    # Syntax test
-nginx -T                                    # Tam config dump
-systemctl reload nginx                      # Config reload (downtime yok)
-systemctl restart nginx                     # Tam restart
+nginx -t                                    # Syntax check
+nginx -T                                    # Full config dump
+systemctl reload nginx                      # Reload config (zero downtime)
+systemctl restart nginx                     # Full restart
 
-## LOG TAKİBİ
-tail -f /var/log/nginx/cem.pw.access.log   # Canlı trafik
-tail -f /var/log/nginx/cem.pw.error.log    # Hatalar
-tail -f /var/log/nginx/cem.pw.downloads.log  # Install script indirmeleri
+## LOG TAILING
+tail -f /var/log/nginx/cem.pw.access.log    # Live traffic
+tail -f /var/log/nginx/cem.pw.error.log     # Errors
+tail -f /var/log/nginx/cem.pw.downloads.log # Install-script downloads
 
-# Son 1 saatte en çok istek atan IP'ler:
+# Top 20 client IPs over the recent log window:
 awk '{print $1}' /var/log/nginx/cem.pw.access.log | sort | uniq -c | sort -rn | head -20
 
-# 429 (rate limit) alan IP'ler:
+# IPs hitting 429 (rate-limited):
 grep ' 429 ' /var/log/nginx/cem.pw.access.log | awk '{print $1}' | sort | uniq -c | sort -rn
 
-# 444 (bad bot) olayları:
+# Count of 444 (bad-bot drop) events:
 grep '" 444' /var/log/nginx/cem.pw.access.log | wc -l
 
 ## FAIL2BAN
-fail2ban-client status                      # Tüm jail durumu
-fail2ban-client status nginx-limit-req      # Belirli jail
-fail2ban-client set nginx-limit-req unbanip 1.2.3.4   # IP ban kaldır
-fail2ban-client banned                      # Tüm banlı IP'ler
-iptables -L -n | grep DROP                  # Kernel seviyesi bloklar
+fail2ban-client status                              # All jails
+fail2ban-client status nginx-limit-req              # Specific jail
+fail2ban-client set nginx-limit-req unbanip 1.2.3.4 # Unban an IP
+fail2ban-client banned                              # All currently banned IPs
+iptables -L -n | grep DROP                          # Kernel-level drops
 
-## SSL
-certbot renew --dry-run                     # Yenileme testi
-certbot certificates                        # Sertifika durumu
-openssl s_client -connect cem.pw:443 -tls1_3 </dev/null 2>&1 | grep "Protocol"
-# SSLLabs tam test: https://www.ssllabs.com/ssltest/analyze.html?d=cem.pw
+## TLS / CERTIFICATE
+certbot certificates                        # List certs and their expiry
+certbot renew --dry-run                     # Test renewal flow
+openssl s_client -connect cem.pw:443 -tls1_3 </dev/null \
+  | openssl x509 -noout -dates              # Show valid_from / valid_to
 
-## INSTALL SCRIPT GÜNCELLEME
-# 1. cem projesinde install.sh / install.ps1 güncelle
-# 2. Sunucuya kopyala:
-scp cem/install.sh   user@cem.pw:/var/www/cem.pw/scripts/
-scp cem/install.ps1  user@cem.pw:/var/www/cem.pw/scripts/
-# Cache sıfırla gerekmez (Cache-Control: no-cache, max-age=300)
+## SECURITY HEADERS CHECK
+curl -sI https://cem.pw/health | grep -E '^(Strict-Transport-Security|Content-Security-Policy|X-Frame-Options|Permissions-Policy|Server):'
 
-## MANUEL IP BAN
-iptables -A INPUT -s 1.2.3.4 -j DROP
-# Kalıcı için:
-echo "1.2.3.4" >> /etc/nginx/blocked-ips.conf
-# nginx.conf'a ekle: deny 1.2.3.4;
+## RATE-LIMIT TEST
+# Trigger the install proxy 10 times in a row; the burst should kick in at >5.
+for i in $(seq 1 10); do
+  curl -s -o /dev/null -w '%{http_code} ' https://cem.pw/r/cem-linux-amd64
+done; echo
 
-## HIZLI GÜVENLİK TARAMASI
-# Açık portları kontrol et:
-ss -tlnp
-# Nginx process:
-ps aux | grep nginx
-# Bağlantı sayısı:
-ss -s
+## RELEASE FLOW (canonical: GitHub)
+# 1. Tag locally
+git tag -a v1.0.0 -m "v1.0.0"
+git push origin v1.0.0
+# 2. GitHub Actions builds 7 platforms × 3 binaries + SHA256SUMS
+# 3. nginx /r/* now serves the latest assets via GitHub Releases proxy
+# 4. install.sh / install.ps1 download directly from
+#    github.com/muslu/cem/releases/latest/download/
 
-## RATE LIMIT AYARLAMA
-# nginx.conf'daki zone'ları düzenle:
-# limit_req_zone $binary_remote_addr zone=download:20m rate=5r/m;
-# Ardından: nginx -t && systemctl reload nginx
+## ROLLBACK
+# If a release is bad, delete the GitHub Release (web UI or:)
+gh release delete v1.0.0 --yes
+# Re-point /r/* to a prior tag temporarily by editing
+# nginx/sites-available/cem.pw.conf → proxy_pass with explicit tag in URL.
 
-## PERFORMANS
-# Bağlantı istatistikleri:
-curl -s https://cem.pw/health
-# Nginx durum (stub_status modülü gerekir):
-# curl http://localhost/nginx_status
+## SMOKE TEST AFTER DEPLOY
+./build/cem doctor                          # local sanity
+./build/cem --version                       # confirms LDFLAGS injection
+curl -fsSL https://cem.pw/r/cem-linux-amd64 -o /tmp/cem-smoke && \
+  file /tmp/cem-smoke && /tmp/cem-smoke --version

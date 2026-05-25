@@ -1,4 +1,4 @@
-# ⚡ CEM — Unified AI Orchestrator · [cem.pw](https://cem.pw)
+# ⚡ CEM — Compose · Execute · Multiplex · [cem.pw](https://cem.pw)
 
 ```
    ██████╗███████╗███╗   ███╗
@@ -9,12 +9,14 @@
    ╚═════╝╚══════╝╚═╝      ╚═╝
 ```
 
-Birden fazla AI CLI'ı tek komutla kullan.
-Claude düşünsün, Agy yazsın — ya da istediğin kombinasyon.
+**One command, many AIs.** Make Claude think, let Antigravity write — or any
+combination you prefer. Switch per project with a single YAML file.
+
+> Türkçe README: [README.tr.md](README.tr.md)
 
 ---
 
-## Kur
+## Install
 
 ```sh
 # macOS & Linux
@@ -24,64 +26,139 @@ curl -fsSL cem.pw/install | sh
 irm cem.pw/install.ps1 | iex
 ```
 
-İlk `cem` komutunda wizard açılır.
+A setup wizard launches the first time you run `cem`.
 
 ---
 
-## Kullan
+## Use
 
 ```sh
-cem "soru"           # thinker AI — varsayılan, think yazmaya gerek yok
-cem -w "görev"       # writer AI
-cem -p "görev"       # pair: düşün → yaz
-cem -f dosya.py      # dosyayı thinker'a gönder
-cem -wf dosya.py     # dosyayı writer'a gönder
-cat kod.py | cem -p  # pipe ile pair
+cem "question"          # thinker AI — the default; you don't write "think"
+cem -w "task"           # writer AI
+cem -p "task"           # pair: think → write (writer receives thinker's analysis)
+cem -f file.py          # send file contents to thinker
+cem -wf file.py         # send file contents to writer
+cat code.py | cem -p    # pipe into pair mode
+
+cem roles               # show active roles
+cem roles claude agy    # change roles globally
+cem roles --here c agy  # change for this project only (.cem.yaml)
+cem init                # create .cem.yaml interactively
+cem status              # active configuration
+cem doctor              # diagnostic report (system + roles + tools + PATH)
+cem history             # last 20 commands
+cem history -n 100      # last 100
+cem setup               # rerun the install wizard
+cem uninstall           # remove cem/cemi/cemir from your system
 ```
 
-## AI Araçları
+### Installer (`cemi`)
 
 ```sh
-cemi           # kurulu araçları listele
-cemi claude    # Claude kur
-cemi agy       # Agy kur
-cemi all       # hepsini kur (onay sorarak)
-cemi update    # hepsini güncelle
-cemir claude   # Claude kaldır
-cemir agy      # Agy kaldır
+cemi                    # list known tools (installed vs missing)
+cemi claude             # install Claude Code
+cemi agy                # install Antigravity
+cemi all                # install everything (with per-tool confirmation)
+cemi update             # update everything
+cemi update agy         # update only Antigravity
 ```
 
-## Roller
+### Remover (`cemir`)
 
 ```sh
-cem roles                    # kim ne yapıyor?
-cem roles claude agy         # global: thinker=claude, writer=agy
-cem roles gemini             # sadece thinker değiştir
-cem roles --here claude agy  # sadece bu proje
-cem init                     # proje wizard (interaktif)
-cem init claude agy          # proje config direkt oluştur
+cemir                   # list installed tools
+cemir claude            # remove Claude Code
+cemir all               # remove every installed tool (with confirmation)
 ```
 
 ---
 
-## Config Dosyaları
+## Supported AI CLIs
 
-| Dosya | Kapsam |
-|-------|--------|
-| `~/.cem/config.yaml` | Global — tüm projeler |
-| `./.cem.yaml` | Proje — sadece bu dizin |
-
-Proje dizininde `.cem.yaml` varsa global'i override eder.
-Yoksa global kullanılır ve `cem` her komutta bunu bildirir.
+| Key | Tool | Notes |
+|---|---|---|
+| `claude` | Anthropic Claude Code | npm |
+| `agy` | **Antigravity** (Google) | Formerly Gemini CLI — autonomous coding agent |
+| `aider` | Aider | Open-source pair-programming AI (pip) |
+| `gemini` | Google Gemini CLI | ⚠ Personal use ends **2026-06-16** — prefer `agy` |
+| `gpt` | OpenAI Codex CLI | Renamed from the `gpt` CLI (npm) |
+| `goose` | Block Goose | Open-source autonomous agent (pip) |
+| `cody` | Sourcegraph Cody | npm |
+| `continue` | Continue.dev | Autopilot for VSCode/JetBrains (npm) |
+| `openhands` | OpenHands | Formerly OpenDevin — autonomous SWE agent (pip) |
+| `cursor` | Cursor | Cursor terminal agent (npm) |
 
 ---
 
-## Desteklenen Araçlar
+## Configuration
 
-| Araç | Açıklama |
-|------|----------|
-| `claude` | Analiz, mimari, düşünme |
-| `agy` | Hızlı kod üretimi |
-| `aider` | Git-aware kod yazma |
-| `gemini` | Google Gemini |
-| `gpt` | OpenAI GPT-4 |
+- `~/.cem/config.yaml` — global config (default roles + installed tools)
+- `.cem.yaml` — project override; lives at the repo root
+
+Project values take precedence; any field left out falls back to the global
+config. Example `.cem.yaml`:
+
+```yaml
+roles:
+  thinker: gemini
+  writer:  aider
+```
+
+Run `cem roles` to see which config is active and where it comes from.
+
+---
+
+## How `cem -p` works
+
+```
+       you type ──► thinker AI ──► analysis ──► writer AI ──► final code
+       (input)      (claude)       (text)        (agy)
+```
+
+The thinker's full output is appended to the writer's prompt as
+`--- Thinker analysis ---`, giving the writer reasoning context before it
+produces code.
+
+---
+
+## History
+
+Every `cem` invocation appends a line to `~/.cem/history.log`:
+
+```
+2026-05-25T13:42:11Z    pair    claude+agy    0    refactor middleware to async …
+```
+
+Inspect with `cem history -n 50` or wipe with `cem history --clear`.
+
+---
+
+## Build from source
+
+```sh
+git clone https://github.com/muslu/cem.git
+cd cem
+make build            # builds ./build/{cem,cemi,cemir}
+make dev              # installs to ~/.local/bin
+make install          # installs to /usr/local/bin (sudo)
+make test             # go test ./...
+```
+
+Version is injected from `git describe --tags --always --dirty`:
+
+```sh
+./build/cem --version
+# cem version v1.0.0
+```
+
+---
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+## Links
+
+- Site: [cem.pw](https://cem.pw)
+- Source: [github.com/muslu/cem](https://github.com/muslu/cem)
+- Issues: [github.com/muslu/cem/issues](https://github.com/muslu/cem/issues)

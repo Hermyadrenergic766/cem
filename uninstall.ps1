@@ -1,5 +1,5 @@
 # ⚡ CEM — Windows Kaldırma Scripti
-# irm cem.pw/uninstall.ps1 | iex
+# iwr cem.pw/uninstall.ps1 -UseB | iex
 
 $ErrorActionPreference = "Stop"
 
@@ -127,7 +127,7 @@ if ($removed -gt 0) {
     Write-Host "  ╰─────────────────────────────────────────────╯" -ForegroundColor Green
     Write-Host ""
     Write-Host "  Yeniden kurmak için:" -ForegroundColor White
-    Write-Host "  irm cem.pw/install.ps1 | iex" -ForegroundColor Cyan
+    Write-Host "  iwr cem.pw/install.ps1 -UseB | iex" -ForegroundColor Cyan
 } else {
     Write-Host "  ⚠  Binary silinemedi." -ForegroundColor Yellow
     Write-Host "  Manuel kaldır:" -ForegroundColor DarkGray

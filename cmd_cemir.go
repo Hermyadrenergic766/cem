@@ -12,8 +12,8 @@ import (
 // cemir          → kurulu araçları listele
 
 var cemirRootCmd = &cobra.Command{
-	Use:     "cemir [araç]",
-	Short:   "AI araçlarını kaldır",
+	Use:     "cemir [tool]",
+	Short:   "Uninstall AI CLI tools",
 	Version: version,
 	Args:    cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {

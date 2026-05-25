@@ -1,0 +1,21 @@
+title: CEM — Compose · Execute · Multiplex
+description: One command, many AIs. Orchestrator for Claude · Antigravity · Aider · Codex · Goose · Cody · Continue · OpenHands · Cursor.
+theme: jekyll-theme-minimal
+show_downloads: false
+url: https://cem.pw
+
+exclude:
+  - nginx/
+  - Makefile
+  - go.mod
+  - go.sum
+  - "*.go"
+  - build/
+  - dist/
+  - .gitlab-ci.yml
+  - todo.md
+  - todo.tr.md
+  - OPERATIONS.md
+  - OPERATIONS.tr.md
+  - CLAUDE.md
+  - CLAUDE.tr.md
