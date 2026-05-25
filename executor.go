@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -83,9 +85,49 @@ func errMissingRole(name string) error {
 // resolveCommand — config'de saklanan command tercih edilir, yoksa tool key
 func resolveCommand(toolKey string, rc *ResolvedConfig) string {
 	if t, ok := rc.Global.Tools[toolKey]; ok && t.Command != "" {
-		return t.Command
+		// Config'deki yol hâlâ geçerli mi?
+		if _, err := exec.LookPath(t.Command); err == nil {
+			return t.Command
+		}
+	}
+	// PATH'da düz isimle var mı?
+	if _, err := exec.LookPath(toolKey); err == nil {
+		return toolKey
+	}
+	// Bilinen kurulum konumlarını dene (bazı installer'lar PATH'i güncellemiyor).
+	if p := fallbackInstallPath(toolKey); p != "" {
+		return p
 	}
 	return toolKey
+}
+
+// fallbackInstallPath — araç PATH'da yoksa standart konumlarda arar.
+func fallbackInstallPath(toolKey string) string {
+	home, _ := os.UserHomeDir()
+	candidates := []string{}
+	switch toolKey {
+	case "agy":
+		if runtime.GOOS == "windows" {
+			if lad := os.Getenv("LOCALAPPDATA"); lad != "" {
+				candidates = append(candidates, filepath.Join(lad, "agy", "bin", "agy.exe"))
+			}
+		} else {
+			candidates = append(candidates, filepath.Join(home, ".local", "bin", "agy"))
+		}
+	case "cursor":
+		if runtime.GOOS == "windows" {
+			if lad := os.Getenv("LOCALAPPDATA"); lad != "" {
+				candidates = append(candidates,
+					filepath.Join(lad, "Programs", "cursor", "resources", "app", "bin", "cursor-agent.exe"))
+			}
+		}
+	}
+	for _, p := range candidates {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
 }
 
 // runTool — stdin'i pipe edip stdout/stderr'i kullanıcıya gösterir

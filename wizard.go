@@ -267,16 +267,22 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 		version = strings.TrimSpace(string(out))
 	}
 
-	cfg.Tools[toolKey] = InstalledTool{Command: toolKey, Version: version}
-
-	// Shell-install (curl|bash, iwr|iex) sıklıkla PATH'i sadece YENİ shell'de yeniler.
-	// Mevcut süreçte exec.LookPath başarısız olabilir; kullanıcıyı bilgilendir.
+	// Shell-install (curl|bash, iwr|iex) sıklıkla PATH'i güncellemiyor;
+	// önce PATH'da arıyoruz, yoksa bilinen kurulum konumlarını deniyoruz.
+	command := toolKey
 	if _, lookErr := exec.LookPath(toolKey); lookErr != nil {
-		fmt.Printf("  %s %s kuruldu ama %s henüz PATH'de değil\n",
-			styleWarn.Render("⚠"), meta.Name, toolKey)
-		fmt.Println(styleDim.Render("    Yeni terminal aç (PATH bu oturumda yenilenmez)"))
-		return nil
+		if fallback := fallbackInstallPath(toolKey); fallback != "" {
+			command = fallback
+			fmt.Println(styleDim.Render("    bulundu: " + fallback))
+		} else {
+			cfg.Tools[toolKey] = InstalledTool{Command: toolKey, Version: version}
+			fmt.Printf("  %s %s kuruldu ama %s henüz PATH'de değil\n",
+				styleWarn.Render("⚠"), meta.Name, toolKey)
+			fmt.Println(styleDim.Render("    Yeni terminal aç (PATH bu oturumda yenilenmez)"))
+			return nil
+		}
 	}
+	cfg.Tools[toolKey] = InstalledTool{Command: command, Version: version}
 	fmt.Printf("  %s %s kuruldu\n", styleSuccess.Render("✓"), meta.Name)
 	return nil
 }
