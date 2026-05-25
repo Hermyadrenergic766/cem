@@ -79,7 +79,7 @@ func initCemiCmd() {
 
 func installAll(cfg *GlobalConfig) {
 	// Sıralı liste (map rastgele sıralı)
-	order := []string{"claude", "agy", "aider", "gemini", "gpt"}
+	order := orderedToolKeys
 
 	for _, key := range order {
 		meta, ok := KnownTools[key]
@@ -135,7 +135,7 @@ func printToolList(cfg *GlobalConfig) {
 	fmt.Printf("  Kurulu: %s / %d araç\n\n",
 		styleBold.Render(fmt.Sprintf("%d", installed)), available)
 
-	order := []string{"claude", "agy", "aider", "gemini", "gpt"}
+	order := orderedToolKeys
 	for _, key := range order {
 		meta := KnownTools[key]
 		if t, ok := cfg.Tools[key]; ok {
@@ -152,6 +152,11 @@ func printToolList(cfg *GlobalConfig) {
 				styleDim.Render("○"),
 				key,
 				styleDim.Render(meta.Description))
+		}
+		if meta.Deprecated != "" {
+			fmt.Printf("    %s %s\n",
+				styleWarn.Render("⚠ deprecated:"),
+				styleDim.Render(meta.Deprecated))
 		}
 	}
 

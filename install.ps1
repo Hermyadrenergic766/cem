@@ -1,9 +1,9 @@
-# ⚡ CEM — Unified AI Orchestrator
-# Kurulum: irm cem.pw/install.ps1 | iex
+# ⚡ CEM — Compose · Execute · Multiplex
+# Kurulum: iwr cem.pw/install.ps1 -UseB | iex
 
 $ErrorActionPreference = "Stop"
-$REPO    = "http://gitlab.makdos.biz/makdos/cem"
-$RELEASE = "https://cem.pw/r"
+$REPO    = "https://github.com/muslu/cem"
+$RELEASE = "https://github.com/muslu/cem/releases/latest/download"
 
 function Write-Banner {
     $c = [char]27  # ESC
@@ -15,10 +15,10 @@ function Write-Banner {
     Write-Host "  ╚██████╗███████╗██║  ╚═╝ ██║" -ForegroundColor Cyan
     Write-Host "   ╚═════╝╚══════╝╚═╝      ╚═╝" -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "  ⚡ Unified AI Orchestrator" -ForegroundColor White -NoNewline
+    Write-Host "  ⚡ Compose · Execute · Multiplex" -ForegroundColor White -NoNewline
     Write-Host "  ·  " -ForegroundColor DarkGray -NoNewline
     Write-Host "cem.pw" -ForegroundColor Cyan
-    Write-Host "  Birden fazla AI CLI'ı tek komutla kullan" -ForegroundColor DarkGray
+    Write-Host "  One command, many AIs." -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "  ────────────────────────────────────────" -ForegroundColor DarkGray
     Write-Host ""
@@ -98,5 +98,5 @@ Write-Host "  cemi claude        → Claude kur" -ForegroundColor DarkGray
 Write-Host "  cemi agy           → Agy kur" -ForegroundColor DarkGray
 Write-Host "  cem roles          → kim ne yapıyor?" -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "  Döküman → https://cem.pw/docs" -ForegroundColor DarkGray
+Write-Host "  Döküman → https://cem.pw" -ForegroundColor DarkGray
 Write-Host ""

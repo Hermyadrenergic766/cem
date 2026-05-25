@@ -25,7 +25,7 @@ var (
 
 // RunSetupWizard — ilk kurulum sihirbazı
 func RunSetupWizard(cfg *GlobalConfig) error {
-	toolOrder := []string{"claude", "agy", "aider", "gemini", "gpt"}
+	toolOrder := orderedToolKeys
 
 	fmt.Println(styleBox.Render(
 		styleTitle.Render("Hangi AI düşünür, hangi AI yazar?") + "\n" +
@@ -45,6 +45,11 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 			colorTagline.Render(meta.Description),
 			installed,
 		)
+		if meta.Deprecated != "" {
+			fmt.Printf("       %s %s\n",
+				styleWarn.Render("⚠"),
+				styleDim.Render(meta.Deprecated))
+		}
 	}
 	fmt.Println()
 

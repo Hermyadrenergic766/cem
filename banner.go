@@ -40,19 +40,19 @@ func PrintBanner(kind BannerKind) {
 
 	switch kind {
 	case BannerCem:
-		badge    = colorAccent.Render("  ⚡ Unified AI Orchestrator")
-		subtitle = colorTagline.Render("  Birden fazla AI'ı tek komutla kullan")
-		tip      = colorMuted.Render("  cem -p \"görev\"  →  pair modu")
+		badge    = colorAccent.Render("  ⚡ Compose · Execute · Multiplex")
+		subtitle = colorTagline.Render("  One command, many AIs.")
+		tip      = colorMuted.Render("  cem -p \"task\"  →  pair mode")
 
 	case BannerCemi:
 		badge    = colorGreen.Render("  📦 AI Tool Installer")
-		subtitle = colorTagline.Render("  AI CLI araçlarını yükle ve güncelle")
-		tip      = colorMuted.Render("  cemi all  →  hepsini kur")
+		subtitle = colorTagline.Render("  Install and update AI CLI tools")
+		tip      = colorMuted.Render("  cemi all  →  install everything")
 
 	case BannerCemir:
 		badge    = colorRed.Render("  🗑  AI Tool Remover")
-		subtitle = colorTagline.Render("  Kurulu AI araçlarını kaldır")
-		tip      = colorMuted.Render("  cemir claude  →  claude'u kaldır")
+		subtitle = colorTagline.Render("  Uninstall AI CLI tools")
+		tip      = colorMuted.Render("  cemir claude  →  remove Claude")
 	}
 
 	url := colorURL.Render("  cem.pw")

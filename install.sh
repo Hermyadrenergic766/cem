@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
-# ⚡ CEM — Unified AI Orchestrator
-# curl -fsSL cem.pw/install | sh
+# ⚡ CEM — Compose · Execute · Multiplex
+# curl -fsSL cem.pw/install.sh | sh
 
 set -e
 
-REPO="http://gitlab.makdos.biz/makdos/cem"
-RELEASE_URL="https://cem.pw/r"
+REPO="https://github.com/muslu/cem"
+RELEASE_URL="https://github.com/muslu/cem/releases/latest/download"
 INSTALL_DIR="/usr/local/bin"
 FALLBACK_DIR="$HOME/.local/bin"
 
@@ -30,8 +30,8 @@ cat << 'BANNER'
    ╚═════╝╚══════╝╚═╝      ╚═╝
 BANNER
 printf "${reset}"
-printf "\n${bold}  ⚡ Unified AI Orchestrator${reset}  ${cyan}·  cem.pw${reset}\n"
-printf "${dim}  Birden fazla AI CLI'ı tek komutla kullan${reset}\n\n"
+printf "\n${bold}  ⚡ Compose · Execute · Multiplex${reset}  ${cyan}·  cem.pw${reset}\n"
+printf "${dim}  One command, many AIs.${reset}\n\n"
 printf "  ${dim}────────────────────────────────────────${reset}\n\n"
 
 # ─── Platform ────────────────────────────────────────────────────────────────
@@ -155,4 +155,4 @@ printf "  ${dim}cem -p \"görev\"${reset}     → pair modu\n"
 printf "  ${dim}cemi claude${reset}        → Claude kur\n"
 printf "  ${dim}cemi agy${reset}           → Agy kur\n"
 printf "  ${dim}cem roles${reset}          → kim ne yapıyor?\n"
-printf "\n  ${dim}Döküman → https://cem.pw/docs${reset}\n\n"
+printf "\n  ${dim}Döküman → https://cem.pw${reset}\n\n"

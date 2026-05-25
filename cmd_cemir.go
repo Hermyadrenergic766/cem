@@ -64,7 +64,7 @@ func removeAll(cfg *GlobalConfig) {
 		return
 	}
 
-	order := []string{"claude", "agy", "aider", "gemini", "gpt"}
+	order := orderedToolKeys
 	failed := []string{}
 	for _, key := range order {
 		if _, ok := cfg.Tools[key]; !ok {

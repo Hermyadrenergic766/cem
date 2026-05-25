@@ -60,41 +60,83 @@ func (rc *ResolvedConfig) ActiveRoles() Roles {
 type ToolMeta struct {
 	Name        string
 	Description string
+	// Deprecated boş değilse setup/cemi listelerinde uyarı satırı olarak basılır.
+	Deprecated  string
 	InstallCmd  []string
 	VersionFlag string
 }
 
+// KnownTools — desteklenen AI CLI araçları. Description kullanıcıya gösterilir.
+// Deprecated alanı doluysa setup/cemi listelerinde uyarı görüntülenir.
 var KnownTools = map[string]ToolMeta{
 	"claude": {
 		Name:        "Claude",
-		Description: "Anthropic Claude Code CLI",
+		Description: "Anthropic Claude Code (anthropic.com)",
 		InstallCmd:  []string{"npm", "install", "-g", "@anthropic-ai/claude-code"},
 		VersionFlag: "--version",
 	},
 	"agy": {
-		Name:        "Agy",
-		Description: "Agy CLI agent",
-		InstallCmd:  []string{"npm", "install", "-g", "agy"},
+		Name:        "Antigravity",
+		Description: "Google Antigravity — autonomous coding agent (formerly Gemini CLI)",
+		InstallCmd:  []string{"npm", "install", "-g", "@google/antigravity-cli"},
 		VersionFlag: "--version",
 	},
 	"aider": {
 		Name:        "Aider",
-		Description: "Aider — pair programming AI",
+		Description: "Open-source pair-programming AI (aider.chat)",
 		InstallCmd:  []string{"pip", "install", "--upgrade", "aider-chat"},
 		VersionFlag: "--version",
 	},
 	"gemini": {
 		Name:        "Gemini",
 		Description: "Google Gemini CLI",
+		Deprecated:  "personal use ends 2026-06-16 — prefer 'agy' (Antigravity)",
 		InstallCmd:  []string{"npm", "install", "-g", "@google/gemini-cli"},
 		VersionFlag: "--version",
 	},
 	"gpt": {
-		Name:        "GPT",
-		Description: "OpenAI CLI (openai-cli)",
-		InstallCmd:  []string{"pip", "install", "--upgrade", "openai-cli"},
+		Name:        "Codex",
+		Description: "OpenAI Codex CLI (formerly gpt CLI)",
+		InstallCmd:  []string{"npm", "install", "-g", "@openai/codex"},
 		VersionFlag: "--version",
 	},
+	"goose": {
+		Name:        "Goose",
+		Description: "Block's open-source AI agent (block.github.io/goose)",
+		InstallCmd:  []string{"pip", "install", "--upgrade", "goose-ai"},
+		VersionFlag: "--version",
+	},
+	"cody": {
+		Name:        "Cody",
+		Description: "Sourcegraph Cody CLI",
+		InstallCmd:  []string{"npm", "install", "-g", "@sourcegraph/cody"},
+		VersionFlag: "--version",
+	},
+	"continue": {
+		Name:        "Continue",
+		Description: "Continue.dev CLI — autopilot for VSCode/JetBrains",
+		InstallCmd:  []string{"npm", "install", "-g", "@continuedev/cli"},
+		VersionFlag: "--version",
+	},
+	"openhands": {
+		Name:        "OpenHands",
+		Description: "OpenHands (formerly OpenDevin) — autonomous SWE agent",
+		InstallCmd:  []string{"pip", "install", "--upgrade", "openhands-ai"},
+		VersionFlag: "--version",
+	},
+	"cursor": {
+		Name:        "Cursor",
+		Description: "Cursor terminal agent (cursor-agent)",
+		InstallCmd:  []string{"npm", "install", "-g", "cursor-agent"},
+		VersionFlag: "--version",
+	},
+}
+
+// orderedToolKeys — wizard/installer listelerinin sabit sırası.
+// KnownTools map iterasyonu rastgele; UI tutarlılığı için bu liste kullanılır.
+var orderedToolKeys = []string{
+	"claude", "agy", "aider", "gemini", "gpt",
+	"goose", "cody", "continue", "openhands", "cursor",
 }
 
 // ─── Yollar ──────────────────────────────────────────────────────────────────

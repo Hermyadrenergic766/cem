@@ -95,7 +95,7 @@ func runDoctor() {
 
 	fmt.Println()
 	fmt.Println(styleBold.Render("  Araçlar (PATH kontrolü)"))
-	order := []string{"claude", "agy", "aider", "gemini", "gpt"}
+	order := orderedToolKeys
 	for _, key := range order {
 		meta := KnownTools[key]
 		cmd := resolveCommand(key, rc)
