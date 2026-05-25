@@ -134,13 +134,15 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             val cmd = mutableListOf(cemPath)
             mode.flag?.let { cmd.add(it) }
             cmd.add(prompt)
-            val pb = ProcessBuilder(cmd)
-                .redirectErrorStream(true)
-                .redirectInput(ProcessBuilder.Redirect.DISCARD) // cem io.ReadAll(stdin) hang fix
+            val pb = ProcessBuilder(cmd).redirectErrorStream(true)
             if (workDir != null) pb.directory(java.io.File(workDir))
             tab.appendDim("  → $cemPath${mode.flag?.let { " $it" } ?: ""}")
             val startTime = System.currentTimeMillis()
             val process = pb.start()
+            // cem io.ReadAll(stdin) hang fix: child'ın stdin'ini hemen kapat ki
+            // EOF görsün. Redirect.DISCARD sadece output için geçerli, stdin'de
+            // 'Invalid for reading: WRITE' hatası veriyor.
+            try { process.outputStream.close() } catch (_: Exception) {}
             tab.process = process
 
             // Status bar spinner — text pane'i kirletmez. 100ms'de bir

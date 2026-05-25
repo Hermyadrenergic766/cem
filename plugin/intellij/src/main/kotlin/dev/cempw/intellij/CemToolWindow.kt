@@ -215,6 +215,7 @@ class CemTab {
                     project.basePath?.let { pb.directory(java.io.File(it)) }
                     val startTime = System.currentTimeMillis()
                     val process = pb.start()
+                    try { process.outputStream.close() } catch (_: Exception) {}
                     tab.process = process
 
                     // Status spinner — interactive tab da spinner kullansın
