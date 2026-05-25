@@ -270,11 +270,24 @@ func fallbackInstallPath(toolKey string) string {
 		}
 	case "cursor":
 		if runtime.GOOS == "windows" {
-			if lad := os.Getenv("LOCALAPPDATA"); lad != "" {
+			lad := os.Getenv("LOCALAPPDATA")
+			appd := os.Getenv("APPDATA")
+			if lad != "" {
 				candidates = append(candidates,
 					filepath.Join(lad, "cursor-agent", "cursor-agent.exe"),
-					filepath.Join(lad, "cursor-agent", "agent.exe"))
+					filepath.Join(lad, "cursor-agent", "agent.exe"),
+					filepath.Join(lad, "Programs", "cursor-agent", "cursor-agent.exe"),
+					filepath.Join(lad, "Programs", "cursor", "cursor-agent.exe"))
 			}
+			if appd != "" {
+				// Legacy npm global bin (eski cemi npm install ile gelmişse)
+				candidates = append(candidates,
+					filepath.Join(appd, "npm", "cursor-agent.cmd"),
+					filepath.Join(appd, "npm", "cursor-agent.ps1"),
+					filepath.Join(appd, "npm", "cursor-agent"))
+			}
+			candidates = append(candidates,
+				filepath.Join(home, ".local", "bin", "cursor-agent.exe"))
 		} else {
 			candidates = append(candidates,
 				filepath.Join(home, ".local", "bin", "cursor-agent"),

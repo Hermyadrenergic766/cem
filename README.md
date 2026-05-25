@@ -145,6 +145,16 @@ After a successful `cemi <tool>` install (when the tool supports API keys), cem 
 
 Picking **1** records your key (and lets you add more in a loop). Picking **2** prints the binary you should run to start the OAuth/subscription flow. With `cemi -y` the prompt is skipped silently — a hint reminds you of `cem keys add <provider>` and the binary name.
 
+### OAuth login helper — `cem auth <tool> --code <kod>`
+
+PowerShell + long OAuth code + PSReadline bracketed paste = stuck/timeout for many users (especially with Antigravity). `cem auth <tool> --code <kod>` copies the OAuth code to the system clipboard and then launches the tool's login flow; in the CLI prompt you right-click to paste, which bypasses PSReadline entirely.
+
+```powershell
+cem auth agy --code 4/0AY...long-google-oauth-code
+```
+
+Without `--code` the command just spawns the tool's login subcommand with proper TTY (`<bin> login` for agy/gpt/cursor, just `claude` for Claude Code's REPL prompt). Clipboard backends: `Set-Clipboard` (Windows), `pbcopy` (macOS), `wl-copy`/`xclip`/`xsel` (Linux).
+
 ### Safety: .gitignore safeguard
 
 After every successful install, if the current directory is a git repo cem appends `.cem.yaml` to `.gitignore` (and tells you it did). If there is no `.gitignore` at all, a warning is printed. This prevents accidentally committing a project-local cem config.

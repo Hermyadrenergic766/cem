@@ -111,6 +111,10 @@ type ToolMeta struct {
 	// Models — wizard model seçicide gösterilecek öneriler. Kullanıcı bunlardan
 	// birini seçebilir veya "custom" ile manuel string girebilir.
 	Models []string
+	// AuthCmd — 'cem auth <tool>' tarafından çağrılacak login subcommand.
+	// Boş ise sadece binary çalıştırılır (CLI ilk açılışta kendi prompt'unu açar,
+	// Claude Code böyle çalışır).
+	AuthCmd []string
 }
 
 // KnownTools — desteklenen AI CLI araçları. Description kullanıcıya gösterilir.
@@ -136,6 +140,7 @@ var KnownTools = map[string]ToolMeta{
 		PromptAsArg:      true, // agy -p "prompt" (— -p bir argüman bekliyor)
 		ModelFlag:        "--model",
 		Models:           []string{"gemini-3-pro", "gemini-3-flash"},
+		AuthCmd:          []string{"login"},
 	},
 	"gpt": {
 		Name:        "Codex",
@@ -149,6 +154,7 @@ var KnownTools = map[string]ToolMeta{
 		APIKeyEnv:   "OPENAI_API_KEY",
 		ModelFlag:   "--model",
 		Models:      []string{"gpt-5.5", "gpt-5-mini", "gpt-5"},
+		AuthCmd:     []string{"login"},
 	},
 	"cursor": {
 		Name:             "Cursor",
@@ -161,6 +167,7 @@ var KnownTools = map[string]ToolMeta{
 		PromptAsArg:      true,
 		ModelFlag:        "--model",
 		Models:           []string{"claude-4.6", "gpt-5.2", "gemini-3-pro"},
+		AuthCmd:          []string{"login"},
 	},
 }
 
