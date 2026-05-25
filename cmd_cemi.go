@@ -55,12 +55,18 @@ var cemiRootCmd = &cobra.Command{
 			return
 		}
 
-		// cemi claude / cemi agy / cemi aider ...
+		// cemi claude / cemi agy / cemi gpt / cemi cursor + typo toleransı
 		if _, ok := KnownTools[target]; !ok {
-			fmt.Println(styleError.Render("✗ Bilinmeyen araç: " + target))
-			fmt.Println()
-			printToolList(cfg)
-			os.Exit(1)
+			suggestion := suggestTool(target)
+			if suggestion != "" && askYN(fmt.Sprintf("  '%s' bilinmiyor — '%s' demek istedin mi?",
+				target, styleBold.Render(suggestion))) {
+				target = suggestion
+			} else {
+				fmt.Println(styleError.Render("✗ Unknown tool: " + target))
+				fmt.Println()
+				printToolList(cfg)
+				os.Exit(1)
+			}
 		}
 
 		if err := InstallTool(target, cfg); err != nil {

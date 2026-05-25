@@ -42,6 +42,18 @@ var cemirRootCmd = &cobra.Command{
 			return
 		}
 
+		// Tool key tanınmıyorsa yazım hatası kontrolü
+		if _, ok := KnownTools[target]; !ok {
+			suggestion := suggestTool(target)
+			if suggestion != "" && askYN(fmt.Sprintf("  '%s' bilinmiyor — '%s' demek istedin mi?",
+				target, styleBold.Render(suggestion))) {
+				target = suggestion
+			} else {
+				fmt.Println(styleError.Render("✗ Unknown tool: " + target))
+				os.Exit(1)
+			}
+		}
+
 		if err := RemoveTool(target, cfg); err != nil {
 			fmt.Println(styleError.Render("✗ " + err.Error()))
 			os.Exit(1)
