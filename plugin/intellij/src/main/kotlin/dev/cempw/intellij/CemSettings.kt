@@ -82,27 +82,33 @@ class CemSettingsConfigurable : Configurable {
         return form
     }
 
+    private val defaultLabel = "(CLI default)"
+
     private fun refreshModelCombos() {
         val tk = thinkerCombo?.selectedItem as? String ?: return
         val wk = writerCombo?.selectedItem as? String ?: return
         thinkerModelCombo?.let { it.model = javax.swing.DefaultComboBoxModel(modelsFor(tk).toTypedArray()) }
         writerModelCombo?.let { it.model = javax.swing.DefaultComboBoxModel(modelsFor(wk).toTypedArray()) }
-        thinkerModelCombo?.selectedItem = initial.models[tk].orEmpty().ifBlank { "" }
-        writerModelCombo?.selectedItem = initial.models[wk].orEmpty().ifBlank { "" }
+        thinkerModelCombo?.selectedItem = initial.models[tk]?.ifBlank { defaultLabel } ?: defaultLabel
+        writerModelCombo?.selectedItem  = initial.models[wk]?.ifBlank { defaultLabel } ?: defaultLabel
     }
 
-    /** "" (default) + tool'un bilinen modelleri. */
+    /** '(CLI default)' (default) + tool'un bilinen modelleri. */
     private fun modelsFor(tool: String): List<String> {
-        val list = mutableListOf("")
+        val list = mutableListOf(defaultLabel)
         list += CemConfig.modelsByTool[tool] ?: emptyList()
         return list
     }
 
+    /** Display label ↔ saklanacak değer (default → "" boş string). */
+    private fun normalizeModel(displayed: String?): String =
+        if (displayed.isNullOrBlank() || displayed == defaultLabel) "" else displayed
+
     private fun currentUiState(): CemConfig.State {
         val tk = thinkerCombo?.selectedItem as? String ?: ""
         val wk = writerCombo?.selectedItem as? String ?: ""
-        val tm = thinkerModelCombo?.selectedItem as? String ?: ""
-        val wm = writerModelCombo?.selectedItem as? String ?: ""
+        val tm = normalizeModel(thinkerModelCombo?.selectedItem as? String)
+        val wm = normalizeModel(writerModelCombo?.selectedItem as? String)
         // Mevcut models map'ini kopyala, sadece seçili tool'ların entry'lerini güncelle.
         val models = initial.models.toMutableMap()
         if (tk.isNotBlank()) models[tk] = tm
