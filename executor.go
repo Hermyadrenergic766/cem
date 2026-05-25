@@ -272,12 +272,21 @@ func fallbackInstallPath(toolKey string) string {
 		if runtime.GOOS == "windows" {
 			lad := os.Getenv("LOCALAPPDATA")
 			appd := os.Getenv("APPDATA")
+			// Cursor native installer Windows'ta .cmd + .ps1 launcher koyar
+			// (.exe değil — JS-tabanlı agent), root: %LOCALAPPDATA%\cursor-agent\
 			if lad != "" {
-				candidates = append(candidates,
-					filepath.Join(lad, "cursor-agent", "cursor-agent.exe"),
-					filepath.Join(lad, "cursor-agent", "agent.exe"),
-					filepath.Join(lad, "Programs", "cursor-agent", "cursor-agent.exe"),
-					filepath.Join(lad, "Programs", "cursor", "cursor-agent.exe"))
+				for _, base := range []string{
+					filepath.Join(lad, "cursor-agent"),
+					filepath.Join(lad, "Programs", "cursor-agent"),
+					filepath.Join(lad, "Programs", "cursor"),
+				} {
+					for _, name := range []string{
+						"cursor-agent.cmd", "cursor-agent.exe", "cursor-agent.ps1",
+						"agent.cmd", "agent.exe",
+					} {
+						candidates = append(candidates, filepath.Join(base, name))
+					}
+				}
 			}
 			if appd != "" {
 				// Legacy npm global bin (eski cemi npm install ile gelmişse)
@@ -287,7 +296,8 @@ func fallbackInstallPath(toolKey string) string {
 					filepath.Join(appd, "npm", "cursor-agent"))
 			}
 			candidates = append(candidates,
-				filepath.Join(home, ".local", "bin", "cursor-agent.exe"))
+				filepath.Join(home, ".local", "bin", "cursor-agent.exe"),
+				filepath.Join(home, ".local", "bin", "cursor-agent.cmd"))
 		} else {
 			candidates = append(candidates,
 				filepath.Join(home, ".local", "bin", "cursor-agent"),

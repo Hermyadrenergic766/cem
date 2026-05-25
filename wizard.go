@@ -548,15 +548,43 @@ func RemoveTool(toolKey string, cfg *GlobalConfig) error {
 		if path == "" {
 			return fmt.Errorf("binary konumu bulunamadı — manuel sil")
 		}
-		if err := os.Remove(path); err != nil {
-			return fmt.Errorf("%s silinemedi: %w", path, err)
+		// Tool kendi alt-dizinine kuruluyorsa (örn. \cursor-agent\, \agy\)
+		// versions/ ve config dosyalarıyla birlikte komple ağacı sil. Aksi
+		// halde sadece tek dosyayı temizle ve boş kalan dizinleri kaldır.
+		removed := false
+		dir := filepath.Dir(path)
+		dirName := filepath.Base(dir)
+		grand := filepath.Dir(dir)
+		grandName := filepath.Base(grand)
+		matchesTool := func(n string) bool {
+			return n == toolKey || (meta.Binary != "" && n == meta.Binary)
 		}
-		fmt.Println(styleDim.Render("    silindi: " + path))
-		// Boş kalan ana klasörü temizle (örn. %LOCALAPPDATA%\agy\bin → \agy)
-		if dir := filepath.Dir(path); dir != "" {
-			_ = os.Remove(dir)             // bin/
-			_ = os.Remove(filepath.Dir(dir)) // agy/
+		switch {
+		case matchesTool(dirName):
+			// Ör: %LOCALAPPDATA%\cursor-agent\cursor-agent.cmd → wipe cursor-agent\
+			if err := os.RemoveAll(dir); err != nil {
+				return fmt.Errorf("%s silinemedi: %w", dir, err)
+			}
+			fmt.Println(styleDim.Render("    silindi (komple ağaç): " + dir))
+			removed = true
+		case matchesTool(grandName):
+			// Ör: %LOCALAPPDATA%\agy\bin\agy.exe → wipe agy\
+			if err := os.RemoveAll(grand); err != nil {
+				return fmt.Errorf("%s silinemedi: %w", grand, err)
+			}
+			fmt.Println(styleDim.Render("    silindi (komple ağaç): " + grand))
+			removed = true
+		default:
+			if err := os.Remove(path); err != nil {
+				return fmt.Errorf("%s silinemedi: %w", path, err)
+			}
+			fmt.Println(styleDim.Render("    silindi: " + path))
+			// Boş kalan dizinleri temizle (best-effort)
+			_ = os.Remove(dir)
+			_ = os.Remove(grand)
+			removed = true
 		}
+		_ = removed
 		delete(cfg.Tools, toolKey)
 		fmt.Printf("  %s %s kaldırıldı\n", styleSuccess.Render("✓"), meta.Name)
 		return saveGlobalConfig(cfg)
