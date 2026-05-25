@@ -29,9 +29,12 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Tool window for cem output -->
+        <!-- Tool window for cem output. canCloseContents="true" ile her tab'ın
+             X butonu görünür hale gelir (kodda ContentManager.canCloseContents
+             property'sini set etmek yeterli değil 2024.x sürümlerinde). -->
         <toolWindow id="cem"
                     anchor="bottom"
+                    canCloseContents="true"
                     icon="AllIcons.Toolwindows.ToolWindowMessages"
                     factoryClass="dev.cempw.intellij.CemToolWindowFactory"/>
 

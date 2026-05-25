@@ -146,12 +146,16 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             // progress indicator vb. de anında görünür.
             // Ayrı thread'de heartbeat: 10s'de bir output yoksa kullanıcıyı bilgilendir.
             val lastOutputAt = AtomicLong(System.currentTimeMillis())
+            tab.appendDim("  ▶ subprocess spawned (PID ${process.pid()})")
             val heartbeat = Thread {
+                var ticks = 0
                 while (!tab.cancelled && process.isAlive) {
-                    try { Thread.sleep(10_000) } catch (_: InterruptedException) { break }
-                    if (System.currentTimeMillis() - lastOutputAt.get() > 10_000 && process.isAlive) {
+                    try { Thread.sleep(5_000) } catch (_: InterruptedException) { break }
+                    if (System.currentTimeMillis() - lastOutputAt.get() > 5_000 && process.isAlive) {
+                        ticks++
+                        val secs = ticks * 5
                         ApplicationManager.getApplication().invokeLater {
-                            tab.appendDim("  ⏳ hâlâ çalışıyor... (auth bekliyor olabilir; terminalde: $cemPath${mode.flag?.let { " $it" } ?: ""} \"...\")")
+                            tab.appendDim("  ⏳ ${secs}s — hâlâ çalışıyor (auth bekliyor olabilir; X ile iptal et)")
                         }
                         lastOutputAt.set(System.currentTimeMillis())
                     }
