@@ -64,7 +64,48 @@
         "cem.path": {
           "type": "string",
           "default": "cem",
-          "description": "Path to the cem binary. Leave as 'cem' if it's on PATH."
+          "description": "Path to the cem binary. Leave as 'cem' if it's on PATH.",
+          "order": 1
+        },
+        "cem.thinker": {
+          "type": "string",
+          "enum": ["", "claude", "agy", "gpt", "cursor"],
+          "enumDescriptions": [
+            "(leave empty — keep cem CLI's setting)",
+            "Anthropic Claude Code",
+            "Google Antigravity",
+            "OpenAI Codex",
+            "Cursor agent"
+          ],
+          "default": "",
+          "description": "Thinker AI. Updates ~/.cem/config.yaml when changed.",
+          "order": 10
+        },
+        "cem.thinkerModel": {
+          "type": "string",
+          "default": "",
+          "description": "Model for the thinker. Examples: opus / sonnet / haiku (claude) · gpt-5.5 / gpt-5-mini (gpt) · gemini-3-pro / gemini-3-flash (agy) · claude-4.6 / gpt-5.2 (cursor). Empty = CLI default.",
+          "order": 11
+        },
+        "cem.writer": {
+          "type": "string",
+          "enum": ["", "claude", "agy", "gpt", "cursor"],
+          "enumDescriptions": [
+            "(leave empty — keep cem CLI's setting)",
+            "Anthropic Claude Code",
+            "Google Antigravity",
+            "OpenAI Codex",
+            "Cursor agent"
+          ],
+          "default": "",
+          "description": "Writer AI. Updates ~/.cem/config.yaml when changed.",
+          "order": 20
+        },
+        "cem.writerModel": {
+          "type": "string",
+          "default": "",
+          "description": "Model for the writer. Empty = CLI default.",
+          "order": 21
         }
       }
     }
@@ -74,6 +115,9 @@
     "watch": "npm run compile -- --sourcemap --watch",
     "package": "npm run compile && vsce package --no-dependencies",
     "publish": "npm run compile && vsce publish --no-dependencies"
+  },
+  "dependencies": {
+    "yaml": "^2.6.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

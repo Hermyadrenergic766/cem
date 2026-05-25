@@ -4,9 +4,13 @@
  * Registers three commands (think / write / pair) that pipe the editor
  * selection to the `cem` CLI and stream the response into a dedicated
  * output channel.
+ *
+ * Plus: Settings → cem thinker/writer/model değişikliklerini ~/.cem/config.yaml'a
+ * senkronlar (CLI ve plugin aynı config'i paylaşır).
  */
 import * as vscode from "vscode";
 import { spawn } from "node:child_process";
+import { saveToCemYaml } from "./cemConfig";
 
 type Mode = "think" | "write" | "pair";
 
@@ -83,6 +87,27 @@ export function activate(context: vscode.ExtensionContext) {
       vscode.commands.registerCommand(`cem.${mode}`, () => runMode(mode)),
     );
   }
+  // Settings → cem değişimleri ~/.cem/config.yaml'a yansısın.
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (!e.affectsConfiguration("cem")) return;
+      const cfg = vscode.workspace.getConfiguration("cem");
+      const thinker = cfg.get<string>("thinker", "").trim();
+      const writer  = cfg.get<string>("writer", "").trim();
+      const thinkerModel = cfg.get<string>("thinkerModel", "").trim();
+      const writerModel  = cfg.get<string>("writerModel", "").trim();
+      // Hiçbiri set edilmemişse senkron atla (path-only değişimde YAML'ı bozma).
+      if (!thinker && !writer && !thinkerModel && !writerModel) return;
+      try {
+        saveToCemYaml({ thinker, writer, thinkerModel, writerModel });
+        vscode.window.setStatusBarMessage("$(check) cem settings → ~/.cem/config.yaml", 3000);
+      } catch (err: unknown) {
+        vscode.window.showWarningMessage(
+          `cem: ~/.cem/config.yaml yazılamadı — ${(err as Error).message}`,
+        );
+      }
+    }),
+  );
 }
 
 export function deactivate() {
