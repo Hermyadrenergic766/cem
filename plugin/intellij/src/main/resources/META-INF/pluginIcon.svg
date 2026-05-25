@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IntelliJ plugin icon: 40x40, light theme. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" role="img" aria-label="cem">
+  <defs>
+    <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="40" height="40" rx="6" fill="#f1f5f9"/>
+  <path d="M 26 4
+           L 12 22
+           L 19 22
+           L 16 36
+           L 28 18
+           L 22 18 Z"
+        fill="url(#bolt)" stroke="#0e7490" stroke-width="0.6" stroke-linejoin="round"/>
+</svg>

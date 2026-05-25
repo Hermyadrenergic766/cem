@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  cem master logo — Compose · Execute · Multiplex.
+  Yıldırım (⚡) sembolü, projenin slogan + pair-mode hız çağrışımını
+  taşıyor. Türetilen sürümler: pluginIcon.svg (40x40, IntelliJ),
+  icon.png (256x256, VS Code Marketplace), favicon (ICO).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="cem">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="bolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#0891b2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Yuvarlatılmış kare arka plan -->
+  <rect x="0" y="0" width="256" height="256" rx="40" fill="url(#bg)"/>
+
+  <!-- "C" harfi (üç AI'nın halkasını çağrıştırıyor) -->
+  <path d="M 168 64
+           A 64 64 0 1 0 168 192
+           L 168 156
+           A 28 28 0 1 1 168 100
+           Z"
+        fill="#06b6d4" opacity="0.18"/>
+
+  <!-- Yıldırım — pair-mode'un düşünür→yazar akışı -->
+  <path d="M 148 40
+           L 88 132
+           L 124 132
+           L 108 216
+           L 168 124
+           L 132 124
+           Z"
+        fill="url(#bolt)"
+        stroke="#0e7490" stroke-width="2" stroke-linejoin="round"/>
+</svg>
