@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+// LDFLAGS ile enjekte edilir: -X main.version=$(git describe --tags --always)
+var version = "dev"
+
 func main() {
 	bin := filepath.Base(os.Args[0])
 	// Windows uzantısını at: cem.exe → cem

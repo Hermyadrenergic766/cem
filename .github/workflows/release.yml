@@ -40,10 +40,12 @@ jobs:
         run: |
           mkdir -p dist
           SUFFIX="-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}"
+          VERSION="${GITHUB_REF_NAME:-dev}"
+          LDFLAGS="-s -w -X main.version=${VERSION}"
           for name in cem cemi cemir; do
             out="dist/${name}${SUFFIX}"
-            echo "→ $out"
-            go build -trimpath -ldflags="-s -w" -o "$out" .
+            echo "→ $out  (version=$VERSION)"
+            go build -trimpath -ldflags="$LDFLAGS" -o "$out" .
           done
 
       - uses: actions/upload-artifact@v4

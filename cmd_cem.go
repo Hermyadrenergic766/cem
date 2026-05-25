@@ -17,7 +17,7 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "cem [input]",
 	Short:   "⚡ Unified AI orchestrator",
-	Version: "1.0.0",
+	Version: version,
 	Args:    cobra.ArbitraryArgs,
 	// Banner her çalıştırmada değil sadece help'te görünsün
 	// Kullanım sırasında kısa prefix yeterli

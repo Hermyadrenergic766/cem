@@ -14,7 +14,7 @@ import (
 var cemirRootCmd = &cobra.Command{
 	Use:     "cemir [araç]",
 	Short:   "AI araçlarını kaldır",
-	Version: "1.0.0",
+	Version: version,
 	Args:    cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintBanner(BannerCemir)
