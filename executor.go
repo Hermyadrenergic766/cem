@@ -71,8 +71,8 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 			thinkerLabel += " (default)"
 		}
 		sp := StartSpinner("🧠 " + thinkerLabel + " düşünüyor...")
-		thought, err := captureTool(roles.Thinker, rc, input)
-		sp.Stop()
+		thought, err := captureToolWithSpinner(roles.Thinker, rc, input, sp)
+		sp.Stop() // captureTool içinde de stopWriter durdurabilir; idempotent
 		if err != nil {
 			return err
 		}
@@ -214,10 +214,10 @@ func resolveCommand(toolKey string, rc *ResolvedConfig) string {
 // rateLimitRe — stderr'de rate-limit / quota imzaları (provider'lar arası).
 var rateLimitRe = regexp.MustCompile(`(?i)(rate.?limit|quota|429|too many requests|usage limit|overloaded)`)
 
-// authFailRe — stderr'de yetkilendirme hatası imzaları (401, eksik token vb.).
-// Rate-limit'ten farklıdır: rotasyonla çözülmez, kullanıcı login/key müdahalesi
-// gerekir.
-var authFailRe = regexp.MustCompile(`(?i)(401|unauthorized|missing bearer|invalid api key|not.?logged.?in|please run /login|please log in|authentication failed)`)
+// authFailRe — stderr'de yetkilendirme hatası imzaları (401, eksik token,
+// interaktif OAuth prompt'ları). Rate-limit'ten farklıdır: rotasyonla
+// çözülmez, kullanıcı login/key müdahalesi gerekir.
+var authFailRe = regexp.MustCompile(`(?i)(401|unauthorized|missing bearer|invalid api key|not.?logged.?in|please run /login|please log in|authentication failed|authentication required|please visit the url|paste the authorization code|authentication interrupted|waiting for authentication)`)
 
 // errRateLimit — withKeyRotation iç sinyali. Dışarı sızmaz; tüm key'ler bittiğinde
 // gerçek alt-process hatasına dönüşür.
@@ -232,25 +232,39 @@ func looksLikeAuthFailure(stderr string) bool {
 }
 
 // hintAuth — auth hatası tespit edildiğinde kullanıcıya net düzeltme yolu sun.
-func hintAuth(bin string, meta ToolMeta, cfg *GlobalConfig) {
+// toolKey paramı ile 'cem auth <toolKey>' önerebiliyoruz.
+func hintAuth(bin, toolKey string, meta ToolMeta, cfg *GlobalConfig) {
 	fmt.Println()
-	fmt.Println(styleWarn.Render("  ⚠ " + bin + " yetkilendirilmemiş — auth eksik veya geçersiz"))
-	if meta.Provider == "" {
-		fmt.Println(styleDim.Render("    Login: " + bin + " (CLI'nin kendi akışı)"))
-		return
+	fmt.Println(styleWarn.Render("  ⚠ " + bin + " yetkilendirilmemiş — auth eksik veya interaktif login akışı kesildi"))
+	fmt.Println(styleDim.Render(fmt.Sprintf("    Önerilen: cem auth %s         (pano-yapıştır yardımcısı dahil)", toolKey)))
+	if meta.Provider != "" {
+		if len(cfg.APIKeys[meta.Provider]) > 0 {
+			fmt.Println(styleDim.Render(fmt.Sprintf(
+				"    Veya kayıtlı %d %s key var ama biri/hepsi geçersiz olabilir:",
+				len(cfg.APIKeys[meta.Provider]), meta.Provider)))
+			fmt.Println(styleDim.Render("      cem keys list"))
+			fmt.Println(styleDim.Render(fmt.Sprintf("      cem keys remove %s <index>", meta.Provider)))
+		} else {
+			fmt.Println(styleDim.Render(fmt.Sprintf("    Veya yeni API key: cem keys add %s", meta.Provider)))
+		}
 	}
-	if len(cfg.APIKeys[meta.Provider]) > 0 {
-		fmt.Println(styleDim.Render(fmt.Sprintf(
-			"    Kayıtlı %d %s key var ama biri/hepsi geçersiz olabilir:",
-			len(cfg.APIKeys[meta.Provider]), meta.Provider)))
-		fmt.Println(styleDim.Render("      cem keys list"))
-		fmt.Println(styleDim.Render(fmt.Sprintf("      cem keys remove %s <index>", meta.Provider)))
-		fmt.Println(styleDim.Render(fmt.Sprintf("      cem keys add %s", meta.Provider)))
-	} else {
-		fmt.Println(styleDim.Render(fmt.Sprintf(
-			"    API key: cem keys add %s", meta.Provider)))
-		fmt.Println(styleDim.Render("    veya login: " + bin + "  (CLI'nin kendi akışı)"))
+}
+
+// stopWriter — ilk yazımda spinner'ı durdurur, sonrasında verileri inner'a iletir.
+// Interactive prompt'ların (OAuth URL'leri, kod yapıştırma çağrıları) spinner
+// tarafından üzerine yazılmasını engeller.
+type stopWriter struct {
+	sp      *Spinner
+	inner   io.Writer
+	stopped bool
+}
+
+func (w *stopWriter) Write(p []byte) (int, error) {
+	if !w.stopped && w.sp != nil {
+		w.sp.Stop()
+		w.stopped = true
 	}
+	return w.inner.Write(p)
 }
 
 // withKeyRotation — meta.Provider varsa cfg.APIKeys[provider] içinden sırayla
@@ -395,7 +409,8 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 			cmd.Stdin = strings.NewReader(input)
 		}
 		cmd.Stdout = os.Stdout
-		// stderr'i hem konsola yansıt hem buffer'a yaz (rate-limit / auth imzasını yakalamak için)
+		// stderr'i hem konsola yansıt hem buffer'a yaz (rate-limit / auth imzasını yakalamak için).
+		// runTool zaten spinner çalıştırmıyor, stopWriter pass-through olur.
 		var errBuf bytes.Buffer
 		cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
 		cmd.Env = env
@@ -405,7 +420,7 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 		}
 		if err != nil {
 			if looksLikeAuthFailure(errBuf.String()) {
-				hintAuth(bin, meta, rc.Global)
+				hintAuth(bin, toolKey, meta, rc.Global)
 			} else {
 				fmt.Println(styleError.Render("✗ " + bin + " hata: " + err.Error()))
 			}
@@ -423,6 +438,19 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 		return "", err
 	}
 
+	return captureToolWithSpinner(toolKey, rc, input, nil)
+}
+
+// captureToolWithSpinner — captureTool'un spinner-aware versiyonu. Subprocess
+// ilk byte'ı stderr'e yazdığında verilen spinner durur (OAuth prompt'ları görünsün).
+// sp nil ise düz capture.
+func captureToolWithSpinner(toolKey string, rc *ResolvedConfig, input string, sp *Spinner) (string, error) {
+	bin := resolveCommand(toolKey, rc)
+	if _, err := exec.LookPath(bin); err != nil {
+		fmt.Println(styleError.Render(
+			fmt.Sprintf("✗ %s bulunamadı — kurmak için: cemi %s", bin, toolKey)))
+		return "", err
+	}
 	meta := KnownTools[toolKey]
 	args := buildArgs(meta, toolKey, rc, input)
 	var out []byte
@@ -432,12 +460,18 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 			cmd.Stdin = strings.NewReader(input)
 		}
 		var errBuf bytes.Buffer
-		cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
+		cmd.Stderr = &stopWriter{
+			sp:    sp,
+			inner: io.MultiWriter(os.Stderr, &errBuf),
+		}
 		cmd.Env = env
 		var runErr error
 		out, runErr = cmd.Output()
 		if runErr != nil && looksLikeRateLimit(errBuf.String()) {
 			return errRateLimit
+		}
+		if runErr != nil && looksLikeAuthFailure(errBuf.String()) {
+			hintAuth(bin, toolKey, meta, rc.Global)
 		}
 		return runErr
 	})
