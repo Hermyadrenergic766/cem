@@ -12,7 +12,7 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.0.21"
-    id("org.jetbrains.intellij.platform") version "2.1.0"
+    id("org.jetbrains.intellij.platform") version "2.16.0"
 }
 
 group = "dev.cempw"
@@ -33,6 +33,9 @@ dependencies {
         intellijIdeaCommunity("2024.3")
         bundledPlugin("com.intellij.platform.images")
         testFramework(TestFrameworkType.Platform)
+        // instrumentCode task'i için: form (.form) ve diğer kaynakların bytecode
+        // post-processing'ini yapacak Java derleyicisi.
+        instrumentationTools()
     }
     testImplementation("junit:junit:4.13.2")
 }
