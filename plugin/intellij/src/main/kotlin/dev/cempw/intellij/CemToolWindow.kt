@@ -47,6 +47,30 @@ class CemToolWindow(@Suppress("UNUSED_PARAMETER") project: Project) {
         add(JBScrollPane(textPane), BorderLayout.CENTER)
     }
 
+    init {
+        appendStyled(
+            """
+            ⚡ cem — Compose · Execute · Multiplex
+            One command, many AIs.
+
+            Send code from the editor to your configured AIs:
+              Ctrl+Alt+I   →  cem: think on selection   (thinker AI)
+              Ctrl+Alt+W   →  cem: write on selection   (writer AI)
+              Ctrl+Alt+P   →  cem: pair on selection    (thinker → writer)
+
+            Tip: with no selection, the whole active file is sent.
+
+            Configure thinker/writer/model:  Settings → Tools → cem
+            See also:  https://github.com/muslu/cem
+
+            ─── output will appear below ───
+
+            """.trimIndent(),
+            bold = false,
+            color = JBColor.GRAY,
+        )
+    }
+
     fun appendHeader(mode: String, snippet: String) {
         appendStyled("\n─── cem $mode · ${snippet.replace("\n", " ")} ───\n",
             bold = true, color = JBColor.GRAY)
