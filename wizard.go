@@ -35,6 +35,16 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 			styleDim.Render("Bir kez seç, istediğin zaman değiştir: cem roles")))
 	fmt.Println()
 
+	// Bulunulan dizinde .cem.yaml varsa, kullanıcıya wizard'ın global'i
+	// değiştirdiğini ama proje config'in onu override edeceğini hatırlat.
+	if _, err := os.Stat(".cem.yaml"); err == nil {
+		fmt.Println(styleWarn.Render(
+			"  ⚠ Bu dizinde .cem.yaml var — global ayarlar burada override edilir."))
+		fmt.Println(styleDim.Render(
+			"    Wizard bitince proje config'i de güncellemek isteyip istemediğini soracağım."))
+		fmt.Println()
+	}
+
 	// Araç listesi
 	for i, key := range toolOrder {
 		meta := KnownTools[key]

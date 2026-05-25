@@ -93,10 +93,30 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 
 		fmt.Println()
 		printAIHeader("✍️  writer", roles.Writer, rc)
-		writerInput := input + "\n\n--- Thinker analizi ---\n" + thought
+		writerInput := buildWriterPrompt(input, thought)
 		return runTool(roles.Writer, rc, writerInput, "✍️")
 	}
 	return fmt.Errorf("bilinmeyen mod")
+}
+
+// buildWriterPrompt — writer'a düşünenin çıktısını + net "tekrar analiz
+// yapma" talimatı ile besler. Amaç: writer prompt'u yorumlamak yerine
+// doğrudan implementasyona geçsin, thinker'ın işini tekrarlamasın.
+func buildWriterPrompt(originalTask, thinkerOutput string) string {
+	return strings.Join([]string{
+		"Görev için bir başka AI tarafından analiz/plan yapıldı. Senin işin: aşağıdaki",
+		"analizi uygulayan KODU üretmek. Tekrar analiz yapma, plan açıklaması ekleme,",
+		"trade-off tartışması yapma. Sadece çalışan, eksiksiz kodu yaz (gerekirse kısa",
+		"inline yorum). Birden fazla dosya varsa açıkça belirt.",
+		"",
+		"=== ORİJİNAL GÖREV ===",
+		originalTask,
+		"",
+		"=== THINKER ANALİZİ (TAKİP ET) ===",
+		thinkerOutput,
+		"",
+		"=== ŞİMDİ KODU YAZ ===",
+	}, "\n")
 }
 
 // buildArgs — bir AI CLI çağrısının komut argümanlarını oluşturur. Sıra:
