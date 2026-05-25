@@ -97,6 +97,10 @@ func errMissingRole(name string) error {
 
 // resolveCommand — config'de saklanan command tercih edilir, yoksa tool key
 func resolveCommand(toolKey string, rc *ResolvedConfig) string {
+	binName := toolKey
+	if meta, ok := KnownTools[toolKey]; ok && meta.Binary != "" {
+		binName = meta.Binary
+	}
 	if t, ok := rc.Global.Tools[toolKey]; ok && t.Command != "" {
 		// Config'deki yol hâlâ geçerli mi?
 		if _, err := exec.LookPath(t.Command); err == nil {
@@ -104,14 +108,14 @@ func resolveCommand(toolKey string, rc *ResolvedConfig) string {
 		}
 	}
 	// PATH'da düz isimle var mı?
-	if _, err := exec.LookPath(toolKey); err == nil {
-		return toolKey
+	if _, err := exec.LookPath(binName); err == nil {
+		return binName
 	}
 	// Bilinen kurulum konumlarını dene (bazı installer'lar PATH'i güncellemiyor).
 	if p := fallbackInstallPath(toolKey); p != "" {
 		return p
 	}
-	return toolKey
+	return binName
 }
 
 // codeRequestRe — input'ta kod yazma niyetini gösteren kelimeler (TR + EN).
@@ -158,8 +162,13 @@ func fallbackInstallPath(toolKey string) string {
 		if runtime.GOOS == "windows" {
 			if lad := os.Getenv("LOCALAPPDATA"); lad != "" {
 				candidates = append(candidates,
-					filepath.Join(lad, "Programs", "cursor", "resources", "app", "bin", "cursor-agent.exe"))
+					filepath.Join(lad, "cursor-agent", "cursor-agent.exe"),
+					filepath.Join(lad, "cursor-agent", "agent.exe"))
 			}
+		} else {
+			candidates = append(candidates,
+				filepath.Join(home, ".local", "bin", "cursor-agent"),
+				filepath.Join(home, ".local", "bin", "agent"))
 		}
 	}
 	for _, p := range candidates {

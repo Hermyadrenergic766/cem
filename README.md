@@ -67,7 +67,7 @@ cem init                          # proje-spesifik wizard
 | `claude` | **Claude Code** (Anthropic) | [native installer](https://code.claude.com/docs/en/quickstart) — auto-update | `claude -p` (stdin) |
 | `agy` | **Antigravity** (Google) | [native installer](https://antigravity.google/docs/cli-getting-started) | `agy -p` (stdin) |
 | `gpt` | **Codex** (OpenAI) | `npm i -g @openai/codex` | `codex exec "prompt"` |
-| `cursor` | **Cursor agent** | `npm i -g cursor-agent` | — |
+| `cursor` | **Cursor agent** | [native installer](https://cursor.com/cli) | `cursor-agent -p "prompt"` |
 
 ```sh
 cemi                              # mevcut & yüklenebilir

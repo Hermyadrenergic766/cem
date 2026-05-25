@@ -58,7 +58,10 @@ func (rc *ResolvedConfig) ActiveRoles() Roles {
 // ─── KnownTools ──────────────────────────────────────────────────────────────
 
 type ToolMeta struct {
-	Name        string
+	Name string
+	// Binary — PATH'da aranan asıl binary adı. Boş ise map'teki anahtar
+	// (toolKey) kullanılır. Cursor için anahtar "cursor", binary "cursor-agent".
+	Binary      string
 	Description string
 	// Deprecated boş değilse setup/cemi listelerinde uyarı satırı olarak basılır.
 	Deprecated string
@@ -98,6 +101,7 @@ var KnownTools = map[string]ToolMeta{
 		InstallShellWin:  "irm https://antigravity.google/cli/install.ps1 | iex",
 		VersionFlag:      "--version",
 		RunFlags:         []string{"-p"},
+		PromptAsArg:      true, // agy -p "prompt" (— -p bir argüman bekliyor)
 	},
 	"gpt": {
 		Name:        "Codex",
@@ -108,10 +112,14 @@ var KnownTools = map[string]ToolMeta{
 		PromptAsArg: true,              // codex exec "prompt"
 	},
 	"cursor": {
-		Name:        "Cursor",
-		Description: "Cursor terminal agent (cursor-agent)",
-		InstallCmd:  []string{"npm", "install", "-g", "cursor-agent"},
-		VersionFlag: "--version",
+		Name:             "Cursor",
+		Binary:           "cursor-agent", // install legacy symlink + 'agent'
+		Description:      "Cursor terminal agent (cursor.com/cli)",
+		InstallShellUnix: "curl -fsS https://cursor.com/install | bash",
+		InstallShellWin:  "irm 'https://cursor.com/install?win32=true' | iex",
+		VersionFlag:      "--version",
+		RunFlags:         []string{"-p"},
+		PromptAsArg:      true,
 	},
 }
 

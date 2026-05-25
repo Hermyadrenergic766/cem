@@ -264,17 +264,22 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 		return err
 	}
 
+	// ToolMeta.Binary set ise PATH'da o adla aranır (örn. cursor → cursor-agent).
+	binName := toolKey
+	if meta.Binary != "" {
+		binName = meta.Binary
+	}
+
 	version := ""
 	if meta.VersionFlag != "" {
-		// Versiyonu ararken tool adını kullan; shell install için meta.InstallCmd nil olabilir.
-		out, _ := exec.Command(toolKey, meta.VersionFlag).Output()
+		out, _ := exec.Command(binName, meta.VersionFlag).Output()
 		version = strings.TrimSpace(string(out))
 	}
 
 	// Shell-install (curl|bash, iwr|iex) sıklıkla PATH'i güncellemiyor;
 	// önce PATH'da arıyoruz, yoksa bilinen kurulum konumlarını deniyoruz.
-	command := toolKey
-	if _, lookErr := exec.LookPath(toolKey); lookErr != nil {
+	command := binName
+	if _, lookErr := exec.LookPath(binName); lookErr != nil {
 		if fallback := fallbackInstallPath(toolKey); fallback != "" {
 			command = fallback
 			fmt.Println(styleDim.Render("    bulundu: " + fallback))
