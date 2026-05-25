@@ -14,7 +14,7 @@ type updateCheckCache struct {
 	LatestVersion string    `json:"latest_version"`
 }
 
-const updateCheckInterval = 24 * time.Hour
+const updateCheckInterval = 1 * time.Hour
 
 // checkUpdateNotice — her cem/cemi/cemir invokasyonunun başında çağrılır.
 // Cache TTL doluysa arka planda GitHub API'sini sorgulayıp dosyayı günceller;

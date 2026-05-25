@@ -64,7 +64,13 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 			return errMissingRole("writer")
 		}
 
-		sp := StartSpinner("🧠 " + roles.Thinker + " düşünüyor...")
+		thinkerLabel := roles.Thinker
+		if m := resolveModel(roles.Thinker, rc); m != "" {
+			thinkerLabel += " (" + m + ")"
+		} else {
+			thinkerLabel += " (default)"
+		}
+		sp := StartSpinner("🧠 " + thinkerLabel + " düşünüyor...")
 		thought, err := captureTool(roles.Thinker, rc, input)
 		sp.Stop()
 		if err != nil {
