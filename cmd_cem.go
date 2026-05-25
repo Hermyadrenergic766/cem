@@ -191,18 +191,24 @@ var initCmd = &cobra.Command{
 		} else {
 			fmt.Println()
 			fmt.Println(styleBold.Render("  Proje rolleri") +
-				styleDim.Render("  (Enter = global değeri kullanılır)"))
+				styleDim.Render("  (boş bırak → global değeri kullanılır)"))
 			fmt.Println()
-			fmt.Printf("  🧠 Thinker [%s]: ", styleBold.Render(global.Thinker))
-			t = readLine()
-			if t == "" {
-				t = global.Thinker
+
+			toolOrder := orderedToolKeys
+			for i, key := range toolOrder {
+				meta := KnownTools[key]
+				installed := ""
+				if _, ok := rc.Global.Tools[key]; ok {
+					installed = styleSuccess.Render(" ✓")
+				}
+				fmt.Printf("  [%d]  %-12s %s%s\n",
+					i+1, styleBold.Render(meta.Name),
+					styleDim.Render(meta.Description), installed)
 			}
-			fmt.Printf("  ✍️  Writer  [%s]: ", styleBold.Render(global.Writer))
-			w = readLine()
-			if w == "" {
-				w = global.Writer
-			}
+			fmt.Println()
+
+			t = pickToolWithDefault("  🧠 Thinker", toolOrder, rc.Global, global.Thinker)
+			w = pickToolWithDefault("  ✍️  Writer ", toolOrder, rc.Global, global.Writer)
 		}
 
 		pc := &ProjectConfig{Roles: &Roles{Thinker: t, Writer: w}}
@@ -245,6 +251,36 @@ var initCmd = &cobra.Command{
 		fmt.Println(styleDim.Render("  Bu dizinden çalışırken proje config geçerli olur."))
 		fmt.Println(styleDim.Render("  cem roles  →  aktif rolleri gör"))
 	},
+}
+
+// pickToolWithDefault — pickTool gibi numarayla seçtirir ama boş Enter'da
+// 'fallback' anahtarını döndürür. cem init için: kullanıcı bir sayı yazmadan
+// Enter'a basarsa global rolü kullansın.
+func pickToolWithDefault(label string, toolOrder []string, cfg *GlobalConfig, fallback string) string {
+	fmt.Printf("%s [1-%d, Enter=%s]: ",
+		styleBold.Render(label), len(toolOrder), styleBold.Render(fallback))
+	reader := bufio.NewReader(os.Stdin)
+	for {
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+		if input == "" {
+			return fallback
+		}
+		idx, err := strconv.Atoi(input)
+		if err == nil && idx >= 1 && idx <= len(toolOrder) {
+			key := toolOrder[idx-1]
+			meta := KnownTools[key]
+			suffix := ""
+			if _, ok := cfg.Tools[key]; ok {
+				suffix = styleSuccess.Render(" (kurulu)")
+			}
+			fmt.Printf("  → %s%s\n", styleBold.Render(meta.Name), suffix)
+			return key
+		}
+		fmt.Printf("  %s [1-%d, Enter=%s]: ",
+			styleWarn.Render("Geçersiz, tekrar gir"),
+			len(toolOrder), styleBold.Render(fallback))
+	}
 }
 
 // pickProjectModel — cem init için: kullanıcıya proje-spesifik model seçtirir.
