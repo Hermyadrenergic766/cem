@@ -12,6 +12,7 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindowManager
 import java.io.InputStreamReader
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * cem editor actions (think / write / pair).
@@ -144,15 +145,15 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             // Char-by-char oku — line buffering ile bekleme yok. spinner \r,
             // progress indicator vb. de anında görünür.
             // Ayrı thread'de heartbeat: 10s'de bir output yoksa kullanıcıyı bilgilendir.
-            @Volatile var lastOutputAt = System.currentTimeMillis()
+            val lastOutputAt = AtomicLong(System.currentTimeMillis())
             val heartbeat = Thread {
                 while (!tab.cancelled && process.isAlive) {
-                    Thread.sleep(10_000)
-                    if (System.currentTimeMillis() - lastOutputAt > 10_000 && process.isAlive) {
+                    try { Thread.sleep(10_000) } catch (_: InterruptedException) { break }
+                    if (System.currentTimeMillis() - lastOutputAt.get() > 10_000 && process.isAlive) {
                         ApplicationManager.getApplication().invokeLater {
                             tab.appendDim("  ⏳ hâlâ çalışıyor... (auth bekliyor olabilir; terminalde: $cemPath${mode.flag?.let { " $it" } ?: ""} \"...\")")
                         }
-                        lastOutputAt = System.currentTimeMillis()
+                        lastOutputAt.set(System.currentTimeMillis())
                     }
                 }
             }
@@ -164,7 +165,7 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             while (!tab.cancelled) {
                 val n = reader.read(buf)
                 if (n < 0) break
-                lastOutputAt = System.currentTimeMillis()
+                lastOutputAt.set(System.currentTimeMillis())
                 val chunk = String(buf, 0, n)
                 ApplicationManager.getApplication().invokeLater { tab.appendRaw(chunk) }
             }
