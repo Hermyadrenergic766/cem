@@ -20,11 +20,15 @@ import javax.swing.text.StyleConstants
  */
 class CemToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
+        // Tab'leri kapatılabilir yapan global ayar — bazı IntelliJ sürümlerinde
+        // varsayılan false, X butonu görünmüyor.
+        toolWindow.contentManager.canCloseContents()
         // Welcome tab (closable; user can dismiss permanently)
         val welcome = CemTab.welcome()
         val content = ContentFactory.getInstance()
             .createContent(welcome.component, "Welcome", true)
         content.isCloseable = true
+        content.isPinned = false
         toolWindow.contentManager.addContent(content)
     }
 }
@@ -141,6 +145,7 @@ class CemTab {
             val content: Content = ContentFactory.getInstance()
                 .createContent(tab.component, title, true)
             content.isCloseable = true
+            content.isPinned = false
             content.setDisposer(Disposable { tab.cancel() })
             toolWindow.contentManager.addContent(content)
             toolWindow.contentManager.setSelectedContent(content)

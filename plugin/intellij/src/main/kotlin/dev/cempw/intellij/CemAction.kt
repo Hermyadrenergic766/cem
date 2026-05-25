@@ -143,20 +143,29 @@ sealed class CemAction(val mode: Mode) : AnAction() {
 
             // Char-by-char oku — line buffering ile bekleme yok. spinner \r,
             // progress indicator vb. de anında görünür.
+            // Ayrı thread'de heartbeat: 10s'de bir output yoksa kullanıcıyı bilgilendir.
+            @Volatile var lastOutputAt = System.currentTimeMillis()
+            val heartbeat = Thread {
+                while (!tab.cancelled && process.isAlive) {
+                    Thread.sleep(10_000)
+                    if (System.currentTimeMillis() - lastOutputAt > 10_000 && process.isAlive) {
+                        ApplicationManager.getApplication().invokeLater {
+                            tab.appendDim("  ⏳ hâlâ çalışıyor... (auth bekliyor olabilir; terminalde: $cemPath${mode.flag?.let { " $it" } ?: ""} \"...\")")
+                        }
+                        lastOutputAt = System.currentTimeMillis()
+                    }
+                }
+            }
+            heartbeat.isDaemon = true
+            heartbeat.start()
+
             val reader = InputStreamReader(process.inputStream, Charsets.UTF_8)
             val buf = CharArray(2048)
-            val pending = StringBuilder()
             while (!tab.cancelled) {
                 val n = reader.read(buf)
                 if (n < 0) break
-                pending.clear()
-                for (i in 0 until n) {
-                    val c = buf[i]
-                    // \r ile başlayan satırlar spinner — \n ile değiştirmeyiz,
-                    // sadece kullanıcıya \r olarak göndeririz (textPane satırı temizler).
-                    pending.append(c)
-                }
-                val chunk = pending.toString()
+                lastOutputAt = System.currentTimeMillis()
+                val chunk = String(buf, 0, n)
                 ApplicationManager.getApplication().invokeLater { tab.appendRaw(chunk) }
             }
             val exit = process.waitFor()
