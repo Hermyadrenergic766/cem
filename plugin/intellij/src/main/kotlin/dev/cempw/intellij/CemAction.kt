@@ -60,6 +60,58 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             return resp?.takeIf { it.isNotBlank() }
         }
 
+        /**
+         * cem binary'sini bul. Sıra:
+         *   1. Settings'te abs path verilmişse ve dosya varsa → onu kullan
+         *   2. ProcessBuilder PATH'ı kontrol et (where/which)
+         *   3. Bilinen kurulum konumları (Win: %LOCALAPPDATA%\cem\bin\cem.exe,
+         *      Unix: /usr/local/bin/cem, ~/.local/bin/cem)
+         *   4. Hiçbiri yoksa Settings değerini olduğu gibi döndür (anlamlı hata için)
+         */
+        fun resolveCemBinary(): String {
+            val configured = CemSettings.instance.cemPath.ifBlank { "cem" }
+            val isWindows = System.getProperty("os.name").startsWith("Windows", ignoreCase = true)
+            val ext = if (isWindows) ".exe" else ""
+
+            // 1) Absolute path verilmişse direkt kontrol et
+            if (configured != "cem" && configured != "cem.exe") {
+                val f = java.io.File(configured)
+                if (f.exists() && f.canExecute()) return configured
+            }
+
+            // 2) PATH üzerinden ara
+            val pathEnv = System.getenv("PATH") ?: ""
+            for (dir in pathEnv.split(java.io.File.pathSeparator)) {
+                if (dir.isBlank()) continue
+                val candidate = java.io.File(dir, "cem$ext")
+                if (candidate.exists() && candidate.canExecute()) return candidate.absolutePath
+            }
+
+            // 3) Bilinen kurulum konumları
+            val home = System.getProperty("user.home")
+            val candidates = if (isWindows) {
+                listOfNotNull(
+                    System.getenv("LOCALAPPDATA")?.let { "$it\\cem\\bin\\cem.exe" },
+                    "$home\\.local\\bin\\cem.exe",
+                    "C:\\Program Files\\cem\\cem.exe",
+                )
+            } else {
+                listOf(
+                    "/usr/local/bin/cem",
+                    "$home/.local/bin/cem",
+                    "/opt/homebrew/bin/cem",
+                    "/home/linuxbrew/.linuxbrew/bin/cem",
+                )
+            }
+            for (path in candidates) {
+                val f = java.io.File(path)
+                if (f.exists() && f.canExecute()) return path
+            }
+
+            // 4) Bulunamadı; configured'u döndür, ProcessBuilder anlamlı hata atacak
+            return configured
+        }
+
         /** Background thread'de cem'i çalıştır + sonucu yeni tab'a stream et. */
         fun launchCem(project: Project, mode: Mode, prompt: String) {
             val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("cem")
@@ -78,13 +130,14 @@ sealed class CemAction(val mode: Mode) : AnAction() {
         }
 
         private fun runCem(project: Project, mode: Mode, prompt: String, tab: CemTab) {
-            val cemPath = CemSettings.instance.cemPath.ifBlank { "cem" }
+            val cemPath = resolveCemBinary()
             val workDir = project.basePath
             val cmd = mutableListOf(cemPath)
             mode.flag?.let { cmd.add(it) }
             cmd.add(prompt)
             val pb = ProcessBuilder(cmd).redirectErrorStream(true)
             if (workDir != null) pb.directory(java.io.File(workDir))
+            tab.appendDim("  → $cemPath${mode.flag?.let { " $it" } ?: ""}")
             val process = pb.start()
             BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
                 reader.lineSequence().forEach { line ->
