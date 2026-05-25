@@ -211,7 +211,10 @@ func ensureDep(bin string) bool {
 	var depBuf strings.Builder
 	install.Stdout = &depBuf
 	install.Stderr = &depBuf
-	if err := install.Run(); err != nil {
+	sp := StartSpinner(fmt.Sprintf("⏳ %s kuruluyor (önkoşul)", bin))
+	err := install.Run()
+	sp.Stop()
+	if err != nil {
 		printTail(depBuf.String(), 12)
 		fmt.Println(styleError.Render("  ✗ kurulum başarısız: " + err.Error()))
 		return false
@@ -227,8 +230,8 @@ func ensureDep(bin string) bool {
 			os.Setenv("PATH", nvmBin+string(os.PathListSeparator)+os.Getenv("PATH"))
 		}
 	}
-	_, err := exec.LookPath(bin)
-	return err == nil
+	_, lookErr := exec.LookPath(bin)
+	return lookErr == nil
 }
 
 // depVersionOK — bin'in çıktısından major sürümü çekip minimum eşikle karşılaştırır.
@@ -323,8 +326,6 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 		}
 	}
 
-	fmt.Printf("  ⏳ %s kuruluyor...\n", styleBold.Render(meta.Name))
-
 	var cmd *exec.Cmd
 	if shellCmd != "" {
 		if runtime.GOOS == "windows" {
@@ -339,12 +340,16 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 		cmd = exec.Command(meta.InstallCmd[0], meta.InstallCmd[1:]...)
 	}
 	// Sessiz kurulum: çıktıyı buffer'a, hata durumunda son satırlar gösterilir.
+	// Kullanıcı süreç donmuş sanmasın diye spinner göster.
 	var instBuf strings.Builder
 	cmd.Stdout = &instBuf
 	cmd.Stderr = &instBuf
-	if err := cmd.Run(); err != nil {
+	sp := StartSpinner(fmt.Sprintf("⏳ %s kuruluyor", meta.Name))
+	runErr := cmd.Run()
+	sp.Stop()
+	if runErr != nil {
 		printTail(instBuf.String(), 15)
-		return err
+		return runErr
 	}
 
 	// ToolMeta.Binary set ise PATH'da o adla aranır (örn. cursor → cursor-agent).
