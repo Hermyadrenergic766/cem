@@ -3,7 +3,8 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'        # legacy semver: v0.1.x
+      - '20[0-9][0-9][0-9][0-9][0-9][0-9].*'  # calendar: YYYYMMDD.MINOR (örn. 20260525.01)
 
 permissions:
   contents: write

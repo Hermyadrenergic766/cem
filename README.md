@@ -92,6 +92,8 @@ cemir all          # remove the installed AI tools
 
 cem checks for new versions in the background and shows a one-line notice if there's an update — never blocks you.
 
+> **Version format:** As of 2026-05-25 cem uses calendar versioning `YYYYMMDD.MINOR` (example: `20260525.01`). Older `v0.1.x` semver tags keep working — `cem update` knows both formats.
+
 ---
 
 ## Want more?
