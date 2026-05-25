@@ -98,22 +98,55 @@ release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
-    - build:linux-amd64
-    - build:linux-arm64
-    - build:linux-arm
-    - build:darwin-amd64
-    - build:darwin-arm64
-    - build:windows-amd64
-    - build:windows-arm64
+    - { job: "build:linux-amd64",   artifacts: true }
+    - { job: "build:linux-arm64",   artifacts: true }
+    - { job: "build:linux-arm",     artifacts: true }
+    - { job: "build:darwin-amd64",  artifacts: true }
+    - { job: "build:darwin-arm64",  artifacts: true }
+    - { job: "build:windows-amd64", artifacts: true }
+    - { job: "build:windows-arm64", artifacts: true }
   script:
-    - echo "Releasing $CI_COMMIT_TAG"
+    - ls -la dist/
+    - cd dist && sha256sum * > SHA256SUMS.txt
+    - cat SHA256SUMS.txt
   release:
     tag_name: "$CI_COMMIT_TAG"
     name: "CEM $CI_COMMIT_TAG"
-    description: "Auto-generated release for $CI_COMMIT_TAG"
+    description: |
+      Auto-generated release for $CI_COMMIT_TAG.
+
+      Kurulum:
+      ```
+      curl -fsSL cem.pw/install | sh
+      ```
+
+      install.sh `cem.pw/r/<file>` proxy'sini kullanır; o da bu release'in
+      `permalink/latest/downloads/` yoluna düşer.
     assets:
       links:
-        - name: "linux-amd64"
-          url:  "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-linux-amd64?job=build:linux-amd64"
+        # Linux
+        - { name: "cem-linux-amd64",   url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-linux-amd64?job=build:linux-amd64",     link_type: "package" }
+        - { name: "cemi-linux-amd64",  url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemi-linux-amd64?job=build:linux-amd64",    link_type: "package" }
+        - { name: "cemir-linux-amd64", url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemir-linux-amd64?job=build:linux-amd64",   link_type: "package" }
+        - { name: "cem-linux-arm64",   url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-linux-arm64?job=build:linux-arm64",     link_type: "package" }
+        - { name: "cemi-linux-arm64",  url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemi-linux-arm64?job=build:linux-arm64",    link_type: "package" }
+        - { name: "cemir-linux-arm64", url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemir-linux-arm64?job=build:linux-arm64",   link_type: "package" }
+        - { name: "cem-linux-arm",     url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-linux-arm?job=build:linux-arm",         link_type: "package" }
+        - { name: "cemi-linux-arm",    url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemi-linux-arm?job=build:linux-arm",        link_type: "package" }
+        - { name: "cemir-linux-arm",   url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemir-linux-arm?job=build:linux-arm",       link_type: "package" }
+        # macOS
+        - { name: "cem-darwin-amd64",   url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-darwin-amd64?job=build:darwin-amd64",    link_type: "package" }
+        - { name: "cemi-darwin-amd64",  url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemi-darwin-amd64?job=build:darwin-amd64",   link_type: "package" }
+        - { name: "cemir-darwin-amd64", url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemir-darwin-amd64?job=build:darwin-amd64",  link_type: "package" }
+        - { name: "cem-darwin-arm64",   url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-darwin-arm64?job=build:darwin-arm64",    link_type: "package" }
+        - { name: "cemi-darwin-arm64",  url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemi-darwin-arm64?job=build:darwin-arm64",   link_type: "package" }
+        - { name: "cemir-darwin-arm64", url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemir-darwin-arm64?job=build:darwin-arm64",  link_type: "package" }
+        # Windows
+        - { name: "cem-windows-amd64.exe",   url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-windows-amd64.exe?job=build:windows-amd64",     link_type: "package" }
+        - { name: "cemi-windows-amd64.exe",  url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemi-windows-amd64.exe?job=build:windows-amd64",    link_type: "package" }
+        - { name: "cemir-windows-amd64.exe", url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemir-windows-amd64.exe?job=build:windows-amd64",   link_type: "package" }
+        - { name: "cem-windows-arm64.exe",   url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cem-windows-arm64.exe?job=build:windows-arm64",     link_type: "package" }
+        - { name: "cemi-windows-arm64.exe",  url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemi-windows-arm64.exe?job=build:windows-arm64",    link_type: "package" }
+        - { name: "cemir-windows-arm64.exe", url: "${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/dist/cemir-windows-arm64.exe?job=build:windows-arm64",   link_type: "package" }
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
