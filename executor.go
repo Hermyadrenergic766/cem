@@ -133,12 +133,43 @@ func resolveCommand(toolKey string, rc *ResolvedConfig) string {
 // rateLimitRe — stderr'de rate-limit / quota imzaları (provider'lar arası).
 var rateLimitRe = regexp.MustCompile(`(?i)(rate.?limit|quota|429|too many requests|usage limit|overloaded)`)
 
+// authFailRe — stderr'de yetkilendirme hatası imzaları (401, eksik token vb.).
+// Rate-limit'ten farklıdır: rotasyonla çözülmez, kullanıcı login/key müdahalesi
+// gerekir.
+var authFailRe = regexp.MustCompile(`(?i)(401|unauthorized|missing bearer|invalid api key|not.?logged.?in|please run /login|please log in|authentication failed)`)
+
 // errRateLimit — withKeyRotation iç sinyali. Dışarı sızmaz; tüm key'ler bittiğinde
 // gerçek alt-process hatasına dönüşür.
 var errRateLimit = errors.New("rate limit / quota")
 
 func looksLikeRateLimit(stderr string) bool {
 	return rateLimitRe.MatchString(stderr)
+}
+
+func looksLikeAuthFailure(stderr string) bool {
+	return authFailRe.MatchString(stderr)
+}
+
+// hintAuth — auth hatası tespit edildiğinde kullanıcıya net düzeltme yolu sun.
+func hintAuth(bin string, meta ToolMeta, cfg *GlobalConfig) {
+	fmt.Println()
+	fmt.Println(styleWarn.Render("  ⚠ " + bin + " yetkilendirilmemiş — auth eksik veya geçersiz"))
+	if meta.Provider == "" {
+		fmt.Println(styleDim.Render("    Login: " + bin + " (CLI'nin kendi akışı)"))
+		return
+	}
+	if len(cfg.APIKeys[meta.Provider]) > 0 {
+		fmt.Println(styleDim.Render(fmt.Sprintf(
+			"    Kayıtlı %d %s key var ama biri/hepsi geçersiz olabilir:",
+			len(cfg.APIKeys[meta.Provider]), meta.Provider)))
+		fmt.Println(styleDim.Render("      cem keys list"))
+		fmt.Println(styleDim.Render(fmt.Sprintf("      cem keys remove %s <index>", meta.Provider)))
+		fmt.Println(styleDim.Render(fmt.Sprintf("      cem keys add %s", meta.Provider)))
+	} else {
+		fmt.Println(styleDim.Render(fmt.Sprintf(
+			"    API key: cem keys add %s", meta.Provider)))
+		fmt.Println(styleDim.Render("    veya login: " + bin + "  (CLI'nin kendi akışı)"))
+	}
 }
 
 // withKeyRotation — meta.Provider varsa cfg.APIKeys[provider] içinden sırayla
@@ -263,7 +294,7 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 			cmd.Stdin = strings.NewReader(input)
 		}
 		cmd.Stdout = os.Stdout
-		// stderr'i hem konsola yansıt hem buffer'a yaz (rate-limit imzasını yakalamak için)
+		// stderr'i hem konsola yansıt hem buffer'a yaz (rate-limit / auth imzasını yakalamak için)
 		var errBuf bytes.Buffer
 		cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
 		cmd.Env = env
@@ -272,7 +303,11 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 			return errRateLimit
 		}
 		if err != nil {
-			fmt.Println(styleError.Render("✗ " + bin + " hata: " + err.Error()))
+			if looksLikeAuthFailure(errBuf.String()) {
+				hintAuth(bin, meta, rc.Global)
+			} else {
+				fmt.Println(styleError.Render("✗ " + bin + " hata: " + err.Error()))
+			}
 		}
 		return err
 	})
