@@ -117,12 +117,15 @@ func pickInstallShell(meta ToolMeta) string {
 	return meta.InstallShellUnix
 }
 
-// ensureDep — bir bin'i PATH'da arar; yoksa kullanıcıya öneri sunar ve
-// (kullanıcı kabul ederse) OS paket yöneticisiyle kurmayı dener.
-// true → bin artık PATH'da; false → kurulum atlandı.
+// ensureDep — bir bin'i PATH'da arar; yoksa veya çok eskise kullanıcıya öneri
+// sunar ve (kullanıcı kabul ederse) OS paket yöneticisiyle kurmayı dener.
+// true → bin artık PATH'da ve yeterince güncel.
 func ensureDep(bin string) bool {
 	if _, err := exec.LookPath(bin); err == nil {
-		return true
+		if depVersionOK(bin) {
+			return true
+		}
+		fmt.Println(styleDim.Render(fmt.Sprintf("  ⚠ %s sürümü çok eski — modern sürüm kuruluyor", bin)))
 	}
 	install, label := depInstallCommand(bin)
 	if install == nil {
@@ -141,6 +144,36 @@ func ensureDep(bin string) bool {
 	}
 	_, err := exec.LookPath(bin)
 	return err == nil
+}
+
+// depVersionOK — bin'in çıktısından major sürümü çekip minimum eşikle karşılaştırır.
+// Claude Code/OpenAI Codex CLI gibi paketler Node 18+ ister; npm 3.x (Ubuntu 18.04)
+// gibi antika sürümlerde install argv parse hatası verir.
+func depVersionOK(bin string) bool {
+	minMajor := map[string]int{
+		"npm":     9, // Node 18 LTS ile gelir
+		"node":    18,
+		"python":  3,
+		"python3": 3,
+	}
+	threshold, has := minMajor[bin]
+	if !has {
+		return true // bilinmeyen → kontrol etme
+	}
+	out, err := exec.Command(bin, "--version").Output()
+	if err != nil {
+		return false
+	}
+	s := strings.TrimSpace(string(out))
+	s = strings.TrimPrefix(s, "v")
+	major := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			break
+		}
+		major = major*10 + int(s[i]-'0')
+	}
+	return major >= threshold
 }
 
 // depInstallCommand — bin için OS-spesifik kurulum komutunu döndürür.
@@ -235,6 +268,15 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 	}
 
 	cfg.Tools[toolKey] = InstalledTool{Command: toolKey, Version: version}
+
+	// Shell-install (curl|bash, iwr|iex) sıklıkla PATH'i sadece YENİ shell'de yeniler.
+	// Mevcut süreçte exec.LookPath başarısız olabilir; kullanıcıyı bilgilendir.
+	if _, lookErr := exec.LookPath(toolKey); lookErr != nil {
+		fmt.Printf("  %s %s kuruldu ama %s henüz PATH'de değil\n",
+			styleWarn.Render("⚠"), meta.Name, toolKey)
+		fmt.Println(styleDim.Render("    Yeni terminal aç (PATH bu oturumda yenilenmez)"))
+		return nil
+	}
 	fmt.Printf("  %s %s kuruldu\n", styleSuccess.Render("✓"), meta.Name)
 	return nil
 }
