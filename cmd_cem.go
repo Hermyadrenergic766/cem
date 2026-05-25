@@ -21,7 +21,10 @@ var rootCmd = &cobra.Command{
 	Short:             "⚡ Compose · Execute · Multiplex — one command, many AIs",
 	Version:           version,
 	Args:              cobra.ArbitraryArgs,
-	PersistentPreRun:  func(cmd *cobra.Command, args []string) { OpenSourceNotice() },
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		OpenSourceNotice()
+		checkUpdateNotice()
+	},
 	// Banner her çalıştırmada değil sadece help'te görünsün
 	// Kullanım sırasında kısa prefix yeterli
 	Run: func(cmd *cobra.Command, args []string) {

@@ -16,7 +16,10 @@ var cemirRootCmd = &cobra.Command{
 	Short:            "Uninstall AI CLI tools",
 	Version:          version,
 	Args:             cobra.ArbitraryArgs,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) { OpenSourceNotice() },
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		OpenSourceNotice()
+		checkUpdateNotice()
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if yes, _ := cmd.Flags().GetBool("yes"); yes {
 			autoYes = true
