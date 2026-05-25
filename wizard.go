@@ -141,22 +141,136 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 		}
 	}
 	fmt.Println()
-	fmt.Printf("  🧠 %s  →  %s\n",
-		styleBold.Render(thinker),
-		colorMuted.Render(`cem "soru"`))
-	fmt.Printf("  ✍️  %s   →  %s\n",
-		styleBold.Render(writer),
-		colorMuted.Render("cem -w \"görev\""))
-	fmt.Printf("  🤝 %s + %s  →  %s\n",
-		styleBold.Render(thinker),
-		styleBold.Render(writer),
-		colorMuted.Render("cem -p \"görev\""))
-	fmt.Println()
-	fmt.Println(styleDim.Render("  Roller değiştirmek için: cem roles claude agy"))
-	fmt.Println(styleDim.Render("  Proje bazlı config için: cem init"))
+	printRolesTable(thinker, writer)
 	fmt.Println()
 
 	return nil
+}
+
+// printRolesTable — rol özetini iki kutu halinde basar:
+//   ┌── Aktif Roller ──────────────────────────┐
+//   │ 🧠 thinker  claude       cem "soru"      │
+//   │ ✍️  writer   agy          cem -w "görev"  │
+//   │ 🤝 pair     claude → agy cem -p "görev"  │
+//   └──────────────────────────────────────────┘
+//   ┌── Değiştir ──────────────────────────────┐
+//   │ cem roles claude agy   global'i değiştir │
+//   │ cem init               proje config'i    │
+//   └──────────────────────────────────────────┘
+func printRolesTable(thinker, writer string) {
+	// İlk kolon (ikon + rol adı): max genişlik = "✍️  writer "
+	// İkinci kolon (model adı kombosu): thinker / writer / pair
+	// Üçüncü kolon: örnek komut
+	rows := [][3]string{
+		{"🧠 thinker", thinker, `cem "soru"`},
+		{"✍️  writer ", writer, `cem -w "görev"`},
+		{"🤝 pair    ", thinker + " → " + writer, `cem -p "görev"`},
+	}
+	helpRows := [][2]string{
+		{"cem roles claude agy", "global'i değiştir"},
+		{"cem roles --here X Y", "sadece bu proje"},
+		{"cem init", "proje wizard"},
+	}
+
+	// Genişlik hesapla
+	w1, w2 := 11, 10 // ikon kolonu sabit, isim kolonu min
+	for _, r := range rows {
+		if l := utf8RuneLen(r[1]); l > w2 {
+			w2 = l
+		}
+	}
+	w3 := 0
+	for _, r := range rows {
+		if l := utf8RuneLen(r[2]); l > w3 {
+			w3 = l
+		}
+	}
+
+	// Aktif Roller kutusu
+	innerWidth := w1 + 2 + w2 + 2 + w3
+	printBoxTitle("Aktif Roller", innerWidth)
+	for _, r := range rows {
+		fmt.Printf("  │ %s  %s  %s │\n",
+			padRight(r[0], w1),
+			styleBold.Render(padRight(r[1], w2)),
+			colorMuted.Render(padRight(r[2], w3)))
+	}
+	printBoxBottom(innerWidth)
+
+	// Değiştir kutusu
+	w4 := 0
+	for _, h := range helpRows {
+		if l := utf8RuneLen(h[0]); l > w4 {
+			w4 = l
+		}
+	}
+	w5 := 0
+	for _, h := range helpRows {
+		if l := utf8RuneLen(h[1]); l > w5 {
+			w5 = l
+		}
+	}
+	hInner := w4 + 2 + w5
+	if hInner < innerWidth {
+		hInner = innerWidth
+	}
+	fmt.Println()
+	printBoxTitle("Değiştir", hInner)
+	for _, h := range helpRows {
+		fmt.Printf("  │ %s  %s │\n",
+			styleBold.Render(padRight(h[0], w4)),
+			styleDim.Render(padRight(h[1], hInner-w4-2)))
+	}
+	printBoxBottom(hInner)
+}
+
+// utf8RuneLen — emoji ve Türkçe karakter sayan görsel genişlik (yaklaşık).
+// Emoji'ler 2 hücre kabul edilir; ANSI escape'ler atılır.
+func utf8RuneLen(s string) int {
+	// Çok kaba: rune sayısı (emoji'ler 1 sayılır ama lipgloss style olmadığı için
+	// pratikte yeterli; ihtiyaç olursa runewidth eklenir).
+	n := 0
+	inEsc := false
+	for _, r := range s {
+		if inEsc {
+			if r == 'm' {
+				inEsc = false
+			}
+			continue
+		}
+		if r == 0x1b {
+			inEsc = true
+			continue
+		}
+		n++
+	}
+	return n
+}
+
+func padRight(s string, width int) string {
+	gap := width - utf8RuneLen(s)
+	if gap <= 0 {
+		return s
+	}
+	return s + strings.Repeat(" ", gap)
+}
+
+// Kutu üst/alt: │ ile │ arasındaki görsel genişlik = inner + 2 (1 boşluk her yandan).
+// Yani ┌─...─┐ arasındaki çizgi sayısı = inner + 2.
+func printBoxTitle(title string, inner int) {
+	tl := utf8RuneLen(title) + 2 // " title "
+	totalDashes := inner + 2     // toplam çizgi inside-width'e eşit
+	leadDashes := 2              // ┌── title ...
+	tailDashes := totalDashes - leadDashes - tl
+	if tailDashes < 1 {
+		tailDashes = 1
+	}
+	fmt.Printf("  ┌%s %s %s┐\n",
+		strings.Repeat("─", leadDashes), title, strings.Repeat("─", tailDashes))
+}
+
+func printBoxBottom(inner int) {
+	fmt.Printf("  └%s┘\n", strings.Repeat("─", inner+2))
 }
 
 // printTail — metnin son n satırını dim renkle yazdırır (hata bağlamı için).
@@ -668,39 +782,56 @@ func ShowRoles(rc *ResolvedConfig) {
 			styleDim.Render("(proje — global override)")
 	}
 
-	fmt.Println(styleBox.Render(
-		styleTitle.Render("Aktif Roller") + "\n\n" +
-			fmt.Sprintf("  🧠 %-10s  %s\n",
-				styleBold.Render(roles.Thinker),
-				colorMuted.Render(`cem "soru"`)) +
-			fmt.Sprintf("  ✍️  %-10s  %s\n",
-				styleBold.Render(roles.Writer),
-				colorMuted.Render("cem -w \"görev\"")) +
-			fmt.Sprintf("  🤝 %s + %s  %s",
-				styleBold.Render(roles.Thinker),
-				styleBold.Render(roles.Writer),
-				colorMuted.Render("cem -p \"görev\"")),
-	))
+	printRolesTable(roles.Thinker, roles.Writer)
 	fmt.Println(src)
 	fmt.Println()
 
-	// Kurulu araçlar
+	// Kurulu araçlar — tablo formatı
 	if len(rc.Global.Tools) > 0 {
-		fmt.Println(styleBold.Render("  Kurulu araçlar:"))
-		for key, tool := range rc.Global.Tools {
-			v := tool.Version
-			if v == "" {
-				v = "kurulu"
-			}
-			fmt.Printf("    %-12s %s\n", key, styleDim.Render(v))
-		}
-		fmt.Println()
+		printToolsTable(rc.Global.Tools)
 	}
+}
 
-	fmt.Println(styleDim.Render("  cem roles claude agy         → global değiştir"))
-	fmt.Println(styleDim.Render("  cem roles --here claude agy   → sadece bu proje"))
-	fmt.Println(styleDim.Render("  cem init                      → proje wizard"))
-	fmt.Println()
+// printToolsTable — kurulu araçları sürüm + model ile birlikte tablo halinde basar.
+func printToolsTable(tools map[string]InstalledTool) {
+	// Genişlikleri hesapla
+	wKey, wVer, wModel := 4, 7, 5
+	for key, t := range tools {
+		if l := utf8RuneLen(key); l > wKey {
+			wKey = l
+		}
+		v := t.Version
+		if v == "" {
+			v = "—"
+		}
+		if l := utf8RuneLen(v); l > wVer {
+			wVer = l
+		}
+		m := t.Model
+		if m == "" {
+			m = "default"
+		}
+		if l := utf8RuneLen(m); l > wModel {
+			wModel = l
+		}
+	}
+	inner := wKey + 2 + wVer + 2 + wModel
+	printBoxTitle("Kurulu Araçlar", inner)
+	for key, t := range tools {
+		v := t.Version
+		if v == "" {
+			v = "—"
+		}
+		m := t.Model
+		if m == "" {
+			m = "default"
+		}
+		fmt.Printf("  │ %s  %s  %s │\n",
+			styleBold.Render(padRight(key, wKey)),
+			styleDim.Render(padRight(v, wVer)),
+			colorMuted.Render(padRight(m, wModel)))
+	}
+	printBoxBottom(inner)
 }
 
 // pickTool — wizard için araç seçtir
