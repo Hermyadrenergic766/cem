@@ -56,7 +56,7 @@
       ]
     },
     "submenus": [
-      { "id": "cem.editorContext", "label": "cem" }
+      { "id": "cem.editorContext", "label": "cem — Compose · Execute · Multiplex" }
     ],
     "configuration": {
       "title": "cem",

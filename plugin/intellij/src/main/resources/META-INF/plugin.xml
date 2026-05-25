@@ -46,7 +46,10 @@
     </extensions>
 
     <actions>
-        <group id="dev.cempw.intellij.MenuGroup" text="cem" popup="true">
+        <group id="dev.cempw.intellij.MenuGroup"
+               text="cem — Compose · Execute · Multiplex"
+               description="One command, many AIs"
+               popup="true">
             <add-to-group group-id="ToolsMenu" anchor="last"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
 
