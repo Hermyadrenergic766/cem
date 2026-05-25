@@ -134,7 +134,9 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             val cmd = mutableListOf(cemPath)
             mode.flag?.let { cmd.add(it) }
             cmd.add(prompt)
-            val pb = ProcessBuilder(cmd).redirectErrorStream(true)
+            val pb = ProcessBuilder(cmd)
+                .redirectErrorStream(true)
+                .redirectInput(ProcessBuilder.Redirect.DISCARD) // cem io.ReadAll(stdin) hang fix
             if (workDir != null) pb.directory(java.io.File(workDir))
             tab.appendDim("  → $cemPath${mode.flag?.let { " $it" } ?: ""}")
             val startTime = System.currentTimeMillis()

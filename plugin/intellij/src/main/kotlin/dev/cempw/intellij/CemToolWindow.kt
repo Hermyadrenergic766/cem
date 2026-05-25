@@ -182,10 +182,10 @@ class CemTab {
                     val prompt = input.text.trim()
                     if (prompt.isEmpty()) return
                     input.text = ""
-                    tab.appendStyled("\n> $prompt\n", bold = true, color = JBColor.foreground())
-                    // 'pair' mode: cem kendi skip mantığıyla writer'ı gerektiğinde
-                    // çağırmaz. Kullanıcı için tek davranış.
-                    launchInline(project, "pair", prompt, tab)
+                    // Interactive tab'da yer kaplamasın diye her soru için
+                    // YENİ tab açıyoruz — kendi spinner'ı + history'si olur.
+                    tab.appendDim("→ yeni tab: $prompt")
+                    CemAction.launchCem(project, CemAction.Mode.PAIR, prompt)
                 }
             })
             input.inputMap.put(KeyStroke.getKeyStroke("ENTER"), "submit")
@@ -193,8 +193,12 @@ class CemTab {
         }
 
         /**
-         * Interactive tab için — yeni tab AÇMADAN, mevcut tab'a stream et.
+         * Interactive tab için legacy — yeni tab AÇMADAN, mevcut tab'a stream et.
+         * Yeni davranış: Interactive submit handler artık CemAction.launchCem'i
+         * çağırıyor (yeni tab açar). Bu fonksiyon ileride farklı use-case için
+         * tutuluyor (örn. test, manuel inline run).
          */
+        @Suppress("unused")
         private fun launchInline(project: Project, mode: String, prompt: String, tab: CemTab) {
             com.intellij.openapi.application.ApplicationManager.getApplication()
                 .executeOnPooledThread {
