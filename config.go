@@ -105,6 +105,7 @@ var KnownTools = map[string]ToolMeta{
 	},
 	"gpt": {
 		Name:        "Codex",
+		Binary:      "codex", // npm @openai/codex 'codex' adıyla PATH'e koyar
 		Description: "OpenAI Codex CLI (developers.openai.com/codex)",
 		InstallCmd:  []string{"npm", "install", "-g", "@openai/codex"},
 		VersionFlag: "--version",
