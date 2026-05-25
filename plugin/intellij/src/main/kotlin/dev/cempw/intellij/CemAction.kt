@@ -11,7 +11,6 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindowManager
-import java.io.BufferedReader
 import java.io.InputStreamReader
 
 /**
@@ -141,11 +140,24 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             tab.appendDim("  (sekmeyi kapatınca işlem iptal edilir)")
             val process = pb.start()
             tab.process = process
-            BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-                reader.lineSequence().forEach { line ->
-                    if (tab.cancelled) return@forEach
-                    ApplicationManager.getApplication().invokeLater { tab.appendLine(line) }
+
+            // Char-by-char oku — line buffering ile bekleme yok. spinner \r,
+            // progress indicator vb. de anında görünür.
+            val reader = InputStreamReader(process.inputStream, Charsets.UTF_8)
+            val buf = CharArray(2048)
+            val pending = StringBuilder()
+            while (!tab.cancelled) {
+                val n = reader.read(buf)
+                if (n < 0) break
+                pending.clear()
+                for (i in 0 until n) {
+                    val c = buf[i]
+                    // \r ile başlayan satırlar spinner — \n ile değiştirmeyiz,
+                    // sadece kullanıcıya \r olarak göndeririz (textPane satırı temizler).
+                    pending.append(c)
                 }
+                val chunk = pending.toString()
+                ApplicationManager.getApplication().invokeLater { tab.appendRaw(chunk) }
             }
             val exit = process.waitFor()
             // Tab kapatıldıysa final mesajı yazmıyoruz — content zaten gitti
