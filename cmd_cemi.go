@@ -20,6 +20,9 @@ var cemiRootCmd = &cobra.Command{
 	Version: version,
 	Args:    cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		if yes, _ := cmd.Flags().GetBool("yes"); yes {
+			autoYes = true
+		}
 		PrintBanner(BannerCemi)
 
 		cfg, err := loadGlobalConfig()
@@ -72,7 +75,7 @@ var cemiRootCmd = &cobra.Command{
 }
 
 func initCemiCmd() {
-	// Alt komut yok — her şey root Run'da handle edilir
+	cemiRootCmd.Flags().BoolP("yes", "y", false, "tüm onayları otomatik kabul et")
 }
 
 // ─── Yardımcı fonksiyonlar ────────────────────────────────────────────────────
@@ -83,7 +86,11 @@ func installAll(cfg *GlobalConfig) {
 
 	for _, key := range order {
 		meta, ok := KnownTools[key]
-		if !ok || meta.InstallCmd == nil {
+		if !ok {
+			continue
+		}
+		// Hem direkt komut hem shell-install yoksa kurulamaz, atla.
+		if meta.InstallCmd == nil && pickInstallShell(meta) == "" {
 			continue
 		}
 		if _, installed := cfg.Tools[key]; installed {

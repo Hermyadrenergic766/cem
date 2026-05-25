@@ -143,6 +143,17 @@ func ensureDep(bin string) bool {
 		fmt.Println(styleError.Render("  ✗ kurulum başarısız: " + err.Error()))
 		return false
 	}
+	// Linux'ta nvm Node'u ~/.nvm/versions/node/<v>/bin/'e koyar; çalışan
+	// cem süreci için PATH'i o dizinle güncelle ki LookPath bulsun.
+	if runtime.GOOS == "linux" && (bin == "npm" || bin == "node") {
+		home, _ := os.UserHomeDir()
+		matches, _ := filepath.Glob(filepath.Join(home, ".nvm", "versions", "node", "*", "bin"))
+		if len(matches) > 0 {
+			// En son sürümü al (lexicographic son)
+			nvmBin := matches[len(matches)-1]
+			os.Setenv("PATH", nvmBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+		}
+	}
 	_, err := exec.LookPath(bin)
 	return err == nil
 }
@@ -188,22 +199,18 @@ func depInstallCommand(bin string) (*exec.Cmd, string) {
 		case "darwin":
 			return exec.Command("brew", "install", "node"), "brew install node"
 		case "linux":
-			// Distro paketleri eski (Ubuntu 18.04 → Node 8). Claude Code Node 18+ ister.
-			// NodeSource LTS setup script'iyle güncel Node kuruyoruz.
-			if _, err := exec.LookPath("apt-get"); err == nil {
-				return exec.Command("sh", "-c",
-						"curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt-get install -y nodejs"),
-					"NodeSource LTS + apt-get install nodejs"
-			}
-			if _, err := exec.LookPath("dnf"); err == nil {
-				return exec.Command("sh", "-c",
-						"curl -fsSL https://rpm.nodesource.com/setup_lts.x | sudo -E bash - && sudo dnf install -y nodejs"),
-					"NodeSource LTS + dnf install nodejs"
-			}
-			if _, err := exec.LookPath("pacman"); err == nil {
-				return exec.Command("sudo", "pacman", "-S", "--noconfirm", "nodejs", "npm"),
-					"sudo pacman -S nodejs npm"
-			}
+			// nvm — prebuilt Node binary. NodeSource artık glibc 2.28+ istiyor;
+			// nvm Ubuntu 18.04 (libc 2.27) dahil her distro'da çalışıyor.
+			return exec.Command("sh", "-c", `
+set -e
+if [ ! -s "$HOME/.nvm/nvm.sh" ]; then
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+fi
+export NVM_DIR="$HOME/.nvm"
+. "$NVM_DIR/nvm.sh"
+nvm install --lts
+nvm use --lts
+`), "nvm + Node LTS (prebuilt, glibc bağımsız)"
 		}
 	case "python", "python3":
 		switch runtime.GOOS {
@@ -436,7 +443,16 @@ func pickTool(prompt string, toolOrder []string, cfg *GlobalConfig) string {
 	}
 }
 
+// autoYes — cemi -y veya benzeri etkileşimsiz mod aktifse tüm askYN
+// çağrıları "y" döner. Komut başlangıcında set edilir, çıkışta sıfırlanmaz
+// (kısa ömürlü süreç).
+var autoYes bool
+
 func askYN(prompt string) bool {
+	if autoYes {
+		fmt.Printf("%s (y/N): y  (auto)\n", prompt)
+		return true
+	}
 	fmt.Printf("%s (y/N): ", prompt)
 	reader := bufio.NewReader(os.Stdin)
 	resp, _ := reader.ReadString('\n')
