@@ -53,8 +53,46 @@ jobs:
           name: cem-${{ matrix.os }}-${{ matrix.arch }}
           path: dist/*
 
+  build-intellij-plugin:
+    name: IntelliJ plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Sync pluginVersion to tag
+        working-directory: plugin/intellij
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/^pluginVersion = .*/pluginVersion = ${VERSION}/" gradle.properties
+          grep pluginVersion gradle.properties
+
+      - name: Build plugin
+        working-directory: plugin/intellij
+        run: gradle buildPlugin --no-daemon --warning-mode all
+
+      - name: Rename to versioned filename
+        working-directory: plugin/intellij/build/distributions
+        run: |
+          ls -la
+          for f in *.zip; do
+            mv "$f" "cem-intellij-${GITHUB_REF_NAME}.zip"
+          done
+          ls -la
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cem-intellij-plugin
+          path: plugin/intellij/build/distributions/*.zip
+
   release:
-    needs: build
+    needs: [build, build-intellij-plugin]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
