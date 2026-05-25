@@ -58,4 +58,10 @@ tasks {
     test {
         useJUnit()
     }
+    // CI'da headless IDE bazen exit 255 atıyor; arama indeksini pre-build etmek
+    // opsiyonel (Search Everywhere'de plugin settings'i bulmaya yarar). Bizim
+    // settings tek bir 'cem.path' field'ı, indeksleme yok = pratik sorun yok.
+    buildSearchableOptions {
+        enabled = false
+    }
 }
