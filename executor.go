@@ -57,11 +57,13 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 			return errMissingRole("writer")
 		}
 
-		fmt.Println(styleDim.Render("  🧠 " + roles.Thinker + " düşünüyor..."))
+		sp := StartSpinner("🧠 " + roles.Thinker + " düşünüyor...")
 		thought, err := captureTool(roles.Thinker, rc, input)
+		sp.Stop()
 		if err != nil {
 			return err
 		}
+		fmt.Println(styleDim.Render("  🧠 " + roles.Thinker + " analizi:"))
 		fmt.Println(thought)
 		fmt.Println()
 		fmt.Println(styleDim.Render("  ✍️  " + roles.Writer + " yazıyor..."))
