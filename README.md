@@ -103,7 +103,7 @@ Run cem from inside your editor instead of the terminal. Each editor has a dedic
 | Editor | Quick install | Setup guide |
 |---|---|---|
 | **PyCharm / IntelliJ IDEA / GoLand / WebStorm / RubyMine / PhpStorm / Rider / DataGrip / CLion / RustRover** | Install plugin zip from disk | [docs/INTELLIJ.md](docs/INTELLIJ.md) |
-| **VS Code** | `code --install-extension cem-vscode-<v>.vsix` | [docs/VSCODE.md](docs/VSCODE.md) |
+| **VS Code** | `code --install-extension cem-vscode.vsix` | [docs/VSCODE.md](docs/VSCODE.md) |
 | **Cursor** | Same vsix as VS Code, plus optional MCP | [docs/CURSOR.md](docs/CURSOR.md) |
 | **Claude Desktop** | `cem-mcp` MCP server | [docs/CLAUDE-DESKTOP.md](docs/CLAUDE-DESKTOP.md) |
 | **Continue.dev** | `cem-mcp` MCP server | [docs/CONTINUE.md](docs/CONTINUE.md) |
@@ -111,7 +111,24 @@ Run cem from inside your editor instead of the terminal. Each editor has a dedic
 | **Vim / Neovim** | No plugin — shell function recipes | [docs/VIM.md](docs/VIM.md) |
 | **Emacs** | No plugin — elisp recipes | [docs/EMACS.md](docs/EMACS.md) |
 
-Downloads (plugin zip, vsix, mcp binaries) live on [GitHub Releases](https://github.com/muslu/cem/releases/latest).
+### Latest downloads
+
+Always-current URLs (redirect to the latest release):
+
+| Asset | URL |
+|---|---|
+| IntelliJ plugin (all JetBrains IDEs) | https://github.com/muslu/cem/releases/latest/download/cem-intellij.zip |
+| VS Code extension (also Cursor) | https://github.com/muslu/cem/releases/latest/download/cem-vscode.vsix |
+| MCP server — Linux x86_64 | https://github.com/muslu/cem/releases/latest/download/cem-mcp-linux-amd64 |
+| MCP server — Linux arm64 | https://github.com/muslu/cem/releases/latest/download/cem-mcp-linux-arm64 |
+| MCP server — macOS Intel | https://github.com/muslu/cem/releases/latest/download/cem-mcp-darwin-amd64 |
+| MCP server — macOS Apple Silicon | https://github.com/muslu/cem/releases/latest/download/cem-mcp-darwin-arm64 |
+| MCP server — Windows | https://github.com/muslu/cem/releases/latest/download/cem-mcp-windows-amd64.exe |
+| cem core binary — Windows | https://github.com/muslu/cem/releases/latest/download/cem-windows-amd64.exe |
+| cem core binary — Linux x86_64 | https://github.com/muslu/cem/releases/latest/download/cem-linux-amd64 |
+| cem core binary — macOS Apple Silicon | https://github.com/muslu/cem/releases/latest/download/cem-darwin-arm64 |
+
+Full Releases page (versioned filenames + changelog): https://github.com/muslu/cem/releases
 
 ---
 

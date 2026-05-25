@@ -85,7 +85,7 @@ jobs:
         working-directory: plugin/intellij
         run: gradle buildPlugin --no-daemon --warning-mode all
 
-      - name: Rename to versioned filename (if needed)
+      - name: Rename + version-less alias
         working-directory: plugin/intellij/build/distributions
         run: |
           ls -la
@@ -95,6 +95,8 @@ jobs:
               mv "$f" "$TARGET"
             fi
           done
+          # Sürümsüz kopya — /releases/latest/download/cem-intellij.zip için
+          cp "$TARGET" cem-intellij.zip
           ls -la
 
       - uses: actions/upload-artifact@v4
@@ -141,6 +143,8 @@ jobs:
           ls -la dist/
           # Outfile keeps the tag-format for download URL consistency
           npx vsce package --no-dependencies --out "cem-vscode-${GITHUB_REF_NAME}.vsix"
+          # Sürümsüz kopya — /releases/latest/download/cem-vscode.vsix için
+          cp "cem-vscode-${GITHUB_REF_NAME}.vsix" cem-vscode.vsix
 
       - uses: actions/upload-artifact@v4
         with:
