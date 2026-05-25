@@ -144,10 +144,11 @@ var KnownTools = map[string]ToolMeta{
 		VersionFlag:      "--version",
 		RunFlags:         []string{"-p"},
 		PromptAsArg:      true, // agy -p "prompt" (— -p bir argüman bekliyor)
-		ModelFlag:        "--model",
-		ModelBeforeRun:   true, // -p arg yutmasın diye --model önce
-		Models:           []string{"gemini-3-pro", "gemini-3-flash"},
-		AuthCmd:          []string{"login"},
+		// NOT: Antigravity CLI'nın model seçim flag'i yok (agy --help → -p, -c, --sandbox,
+		// --print-timeout, vs). Model Google tarafında ya default ya da agy'nin
+		// kendi config dosyasından (varsa) belirleniyor. cem'in --model'i geçirmesi
+		// 'flags provided but not defined' hatasıyla agy'yi düşürüyordu.
+		AuthCmd: []string{"login"},
 	},
 	"gpt": {
 		Name:        "Codex",

@@ -127,7 +127,13 @@ func buildArgs(meta ToolMeta, toolKey string, rc *ResolvedConfig, input string) 
 // 1) Proje config'i (.cem.yaml > models > <key>)
 // 2) Global config (~/.cem/config.yaml > tools > <key> > model)
 // 3) Boş → CLI default kullanılır.
+//
+// Tool'un ModelFlag'i yoksa (örn. agy) hangi config'de ne yazarsa yazsın
+// "" döner — CLI default kullanılır, header de doğru "(default)" gösterir.
 func resolveModel(toolKey string, rc *ResolvedConfig) string {
+	if meta, ok := KnownTools[toolKey]; ok && meta.ModelFlag == "" {
+		return "" // tool model seçimini desteklemiyor
+	}
 	if rc.Project != nil && rc.Project.Models != nil {
 		if m, ok := rc.Project.Models[toolKey]; ok && m != "" {
 			return m
