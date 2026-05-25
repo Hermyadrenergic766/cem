@@ -46,6 +46,7 @@
     </extensions>
 
     <actions>
+        <!-- Editor & Tools menüsü: kod / seçim üzerine aksiyonlar -->
         <group id="dev.cempw.intellij.MenuGroup"
                text="cem — Compose · Execute · Multiplex"
                description="One command, many AIs"
@@ -56,23 +57,62 @@
             <action id="dev.cempw.intellij.ThinkAction"
                     class="dev.cempw.intellij.CemAction$Think"
                     text="cem: think on selection"
-                    description="Send selected text to the cem thinker">
+                    description="Send selected text to the cem thinker. Empty selection → input dialog.">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt I"/>
             </action>
 
             <action id="dev.cempw.intellij.WriteAction"
                     class="dev.cempw.intellij.CemAction$Write"
                     text="cem: write on selection"
-                    description="Send selected text to the cem writer">
+                    description="Send selected text to the cem writer. Empty selection → input dialog.">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt W"/>
             </action>
 
             <action id="dev.cempw.intellij.PairAction"
                     class="dev.cempw.intellij.CemAction$Pair"
                     text="cem: pair on selection"
-                    description="Run cem pair mode (thinker → writer)">
+                    description="Run cem pair mode (thinker → writer). Empty selection → input dialog.">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt P"/>
             </action>
+
+            <separator/>
+
+            <action id="dev.cempw.intellij.AskAction"
+                    class="dev.cempw.intellij.CemAskAction"
+                    text="cem: ask freely…"
+                    description="Open a prompt dialog and run cem -p (no editor required).">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt A"/>
+            </action>
+        </group>
+
+        <!-- Project tree (dosya/dizin sağ-tık) → 'cem' submenüsü -->
+        <group id="dev.cempw.intellij.FileMenuGroup"
+               text="cem — multi-AI"
+               description="cem actions on the selected file(s)"
+               popup="true">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+
+            <action id="dev.cempw.intellij.FileReview"
+                    class="dev.cempw.intellij.CemFileAction$Review"
+                    text="cem: review file…"
+                    description="Quality / bug / improvement review of the selected file(s)"/>
+
+            <action id="dev.cempw.intellij.FileFix"
+                    class="dev.cempw.intellij.CemFileAction$FixErrors"
+                    text="cem: fix errors…"
+                    description="Find and fix bugs in the selected file(s)"/>
+
+            <action id="dev.cempw.intellij.FileExplain"
+                    class="dev.cempw.intellij.CemFileAction$Explain"
+                    text="cem: explain…"
+                    description="Plain-language explanation of what the file does"/>
+
+            <separator/>
+
+            <action id="dev.cempw.intellij.FileAsk"
+                    class="dev.cempw.intellij.CemFileAction$Ask"
+                    text="cem: ask about file…"
+                    description="Custom prompt + file content as context"/>
         </group>
     </actions>
 </idea-plugin>
