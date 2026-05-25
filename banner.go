@@ -47,12 +47,12 @@ func PrintBanner(kind BannerKind) {
 	case BannerCemi:
 		badge    = colorGreen.Render("  📦 AI Tool Installer")
 		subtitle = colorTagline.Render("  Install and update AI CLI tools")
-		tip      = colorMuted.Render("  cemi all  →  install everything")
+		tip      = colorMuted.Render("  cemi all -y  →  install everything (no prompts)")
 
 	case BannerCemir:
 		badge    = colorRed.Render("  🗑  AI Tool Remover")
 		subtitle = colorTagline.Render("  Uninstall AI CLI tools")
-		tip      = colorMuted.Render("  cemir claude  →  remove Claude")
+		tip      = colorMuted.Render("  cemir all -y  →  remove everything (no prompts)")
 	}
 
 	url := colorURL.Render("  cem.pw")
