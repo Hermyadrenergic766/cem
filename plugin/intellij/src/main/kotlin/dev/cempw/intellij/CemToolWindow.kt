@@ -48,6 +48,8 @@ class CemTab {
         isEditable = false
         background = JBColor.background()
     }
+    /** Alt status bar — dönen spinner + geçen süre. Text pane spam'i yok. */
+    val statusLabel = JLabel(" ")
     /** Çalışan subprocess. Tab kapanırsa öldürülür. */
     @Volatile var process: Process? = null
     /** Tab kapatıldı mı (idempotency için). */
@@ -56,7 +58,14 @@ class CemTab {
     init {
         component = JPanel(BorderLayout()).apply {
             add(JBScrollPane(textPane), BorderLayout.CENTER)
+            add(statusLabel, BorderLayout.SOUTH)
         }
+    }
+
+    /** Status bar metnini (EDT-safe) güncelle. */
+    fun setStatus(text: String) {
+        com.intellij.openapi.application.ApplicationManager.getApplication()
+            .invokeLater { statusLabel.text = " $text" }
     }
 
     /** Tab kapatıldığında çağırılır: subprocess'i öldür. */
@@ -135,38 +144,48 @@ class CemTab {
         """.trimIndent()
 
         /**
-         * Etkileşimli "Interactive" tab — REPL benzeri:
+         * Etkileşimli "Interactive" tab — minimal REPL:
          *  ┌──────────────────────────────┐
          *  │ Welcome + history (scroll)   │
-         *  │                              │
-         *  │                              │
          *  ├──────────────────────────────┤
-         *  │ cem "...": [user types]   ⏎ │
+         *  │ cem ›  [input...]          ⏎ │
+         *  ├──────────────────────────────┤
+         *  │ status bar (spinner + süre)  │
          *  └──────────────────────────────┘
-         * Enter → cem "<prompt>" (think mode) → çıktı history'ye eklenir.
+         *
+         * Tek input, Enter → cem -p (pair mode). cem'in kendi skip mantığı:
+         *   - Soru kod istemiyorsa writer otomatik atlanır → sadece thinker
+         *   - Kod istiyorsa thinker → writer zinciri çalışır
+         * Bu sayede kullanıcı mode seçmek zorunda değil.
          */
         fun interactive(project: Project, toolWindow: ToolWindow): CemTab {
             val tab = CemTab()
             tab.appendStyled(welcomeText(), bold = false, color = JBColor.GRAY)
 
             val input = JBTextField()
-            input.toolTipText = "Sorunu yaz, Enter'a bas → cem \"...\" çalışır"
-            val south = JPanel(BorderLayout()).apply {
-                add(JLabel(" cem \"...\" › "), BorderLayout.WEST)
+            input.toolTipText = "Sorunu veya görevi yaz, Enter'a bas"
+
+            val inputPanel = JPanel(BorderLayout()).apply {
+                add(JLabel(" cem ›  "), BorderLayout.WEST)
                 add(input, BorderLayout.CENTER)
             }
-            tab.component.add(south, BorderLayout.SOUTH)
+            // statusLabel zaten SOUTH; input'u onun ÜZERİNE koy (south wrap içinde)
+            tab.component.remove(tab.statusLabel)
+            val southWrap = JPanel(BorderLayout()).apply {
+                add(inputPanel, BorderLayout.NORTH)
+                add(tab.statusLabel, BorderLayout.SOUTH)
+            }
+            tab.component.add(southWrap, BorderLayout.SOUTH)
 
-            // Enter → submit
             input.actionMap.put("submit", object : AbstractAction() {
                 override fun actionPerformed(e: ActionEvent) {
                     val prompt = input.text.trim()
                     if (prompt.isEmpty()) return
                     input.text = ""
                     tab.appendStyled("\n> $prompt\n", bold = true, color = JBColor.foreground())
-                    // Aynı tab'a stream et — yeni tab açma. CemAction.launchCem
-                    // yeni tab açar; biz inline çalıştıracağız.
-                    launchInline(project, prompt, tab)
+                    // 'pair' mode: cem kendi skip mantığıyla writer'ı gerektiğinde
+                    // çağırmaz. Kullanıcı için tek davranış.
+                    launchInline(project, "pair", prompt, tab)
                 }
             })
             input.inputMap.put(KeyStroke.getKeyStroke("ENTER"), "submit")
@@ -176,15 +195,34 @@ class CemTab {
         /**
          * Interactive tab için — yeni tab AÇMADAN, mevcut tab'a stream et.
          */
-        private fun launchInline(project: Project, prompt: String, tab: CemTab) {
+        private fun launchInline(project: Project, mode: String, prompt: String, tab: CemTab) {
             com.intellij.openapi.application.ApplicationManager.getApplication()
                 .executeOnPooledThread {
                 try {
                     val cemPath = CemAction.resolveCemBinary()
-                    val pb = ProcessBuilder(cemPath, prompt).redirectErrorStream(true)
+                    val args = mutableListOf(cemPath)
+                    when (mode) {
+                        "write" -> args.add("-w")
+                        "pair"  -> args.add("-p")
+                        // think: no flag
+                    }
+                    args.add(prompt)
+                    val pb = ProcessBuilder(args).redirectErrorStream(true)
                     project.basePath?.let { pb.directory(java.io.File(it)) }
+                    val startTime = System.currentTimeMillis()
                     val process = pb.start()
                     tab.process = process
+
+                    // Status spinner — interactive tab da spinner kullansın
+                    val frames = listOf("⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏")
+                    Thread {
+                        var i = 0
+                        while (!tab.cancelled && process.isAlive) {
+                            val secs = (System.currentTimeMillis() - startTime) / 1000
+                            tab.setStatus("${frames[i++ % frames.size]}  ${secs}s · running")
+                            try { Thread.sleep(100) } catch (_: InterruptedException) { break }
+                        }
+                    }.apply { isDaemon = true }.start()
                     val reader = java.io.InputStreamReader(process.inputStream, Charsets.UTF_8)
                     val buf = CharArray(2048)
                     while (!tab.cancelled) {

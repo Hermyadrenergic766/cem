@@ -12,7 +12,6 @@ import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindowManager
 import java.io.InputStreamReader
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * cem editor actions (think / write / pair).
@@ -138,47 +137,46 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             val pb = ProcessBuilder(cmd).redirectErrorStream(true)
             if (workDir != null) pb.directory(java.io.File(workDir))
             tab.appendDim("  → $cemPath${mode.flag?.let { " $it" } ?: ""}")
-            tab.appendDim("  (sekmeyi kapatınca işlem iptal edilir)")
+            val startTime = System.currentTimeMillis()
             val process = pb.start()
             tab.process = process
 
-            // Char-by-char oku — line buffering ile bekleme yok. spinner \r,
-            // progress indicator vb. de anında görünür.
-            // Ayrı thread'de heartbeat: 10s'de bir output yoksa kullanıcıyı bilgilendir.
-            val lastOutputAt = AtomicLong(System.currentTimeMillis())
-            tab.appendDim("  ▶ subprocess spawned (PID ${process.pid()})")
-            val heartbeat = Thread {
-                var ticks = 0
+            // Status bar spinner — text pane'i kirletmez. 100ms'de bir
+            // dönen unicode karakter + geçen süre. Süreç bitince temizlenir.
+            val spinnerThread = Thread {
+                val frames = listOf("⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏")
+                var i = 0
                 while (!tab.cancelled && process.isAlive) {
-                    try { Thread.sleep(5_000) } catch (_: InterruptedException) { break }
-                    if (System.currentTimeMillis() - lastOutputAt.get() > 5_000 && process.isAlive) {
-                        ticks++
-                        val secs = ticks * 5
-                        ApplicationManager.getApplication().invokeLater {
-                            tab.appendDim("  ⏳ ${secs}s — hâlâ çalışıyor (auth bekliyor olabilir; X ile iptal et)")
-                        }
-                        lastOutputAt.set(System.currentTimeMillis())
-                    }
+                    val secs = (System.currentTimeMillis() - startTime) / 1000
+                    tab.setStatus("${frames[i % frames.size]}  ${secs}s · running (PID ${process.pid()})")
+                    i++
+                    try { Thread.sleep(100) } catch (_: InterruptedException) { break }
                 }
             }
-            heartbeat.isDaemon = true
-            heartbeat.start()
+            spinnerThread.isDaemon = true
+            spinnerThread.start()
 
+            // Char-by-char oku — line buffering ile bekleme yok.
             val reader = InputStreamReader(process.inputStream, Charsets.UTF_8)
             val buf = CharArray(2048)
             while (!tab.cancelled) {
                 val n = reader.read(buf)
                 if (n < 0) break
-                lastOutputAt.set(System.currentTimeMillis())
                 val chunk = String(buf, 0, n)
                 ApplicationManager.getApplication().invokeLater { tab.appendRaw(chunk) }
             }
             val exit = process.waitFor()
+            val totalSecs = (System.currentTimeMillis() - startTime) / 1000
             // Tab kapatıldıysa final mesajı yazmıyoruz — content zaten gitti
             if (tab.cancelled) return
             ApplicationManager.getApplication().invokeLater {
-                if (exit != 0) tab.appendError("cem exited with code $exit")
-                else tab.appendDim("─── done ───")
+                if (exit != 0) {
+                    tab.appendError("─── exit $exit (after ${totalSecs}s) ───")
+                    tab.setStatus("✗ exit $exit  ·  ${totalSecs}s")
+                } else {
+                    tab.appendDim("─── done in ${totalSecs}s ───")
+                    tab.setStatus("✓ done  ·  ${totalSecs}s")
+                }
             }
         }
     }
