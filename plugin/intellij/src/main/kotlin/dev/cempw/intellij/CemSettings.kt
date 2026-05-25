@@ -1,10 +1,9 @@
 package dev.cempw.intellij
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
-import com.intellij.openapi.components.service
 import com.intellij.openapi.options.Configurable
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
@@ -12,7 +11,9 @@ import com.intellij.util.ui.FormBuilder
 import javax.swing.JComponent
 import javax.swing.JPanel
 
-@Service
+// NOT: @Service annotation kullanmıyoruz — plugin.xml'deki
+// <applicationService> tek kayıt noktası. Çift kayıt 2024.2+ IDE'lerde
+// "no interface supported" (0x80004002) hatasına yol açıyor.
 @State(name = "CemSettings", storages = [Storage("cem.xml")])
 class CemSettings : PersistentStateComponent<CemSettings.State> {
     data class State(
@@ -32,7 +33,8 @@ class CemSettings : PersistentStateComponent<CemSettings.State> {
         }
 
     companion object {
-        val instance: CemSettings get() = service()
+        val instance: CemSettings
+            get() = ApplicationManager.getApplication().getService(CemSettings::class.java)
     }
 }
 
