@@ -116,6 +116,9 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 	}
 	if meta.InstallCmd == nil {
 		fmt.Printf("  %s manuel kurulum gerekiyor\n", meta.Name)
+		if meta.Description != "" {
+			fmt.Printf("  → %s\n", meta.Description)
+		}
 		return nil
 	}
 

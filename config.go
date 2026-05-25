@@ -61,9 +61,14 @@ type ToolMeta struct {
 	Name        string
 	Description string
 	// Deprecated boş değilse setup/cemi listelerinde uyarı satırı olarak basılır.
-	Deprecated  string
-	InstallCmd  []string
+	Deprecated string
+	// InstallCmd nil → manuel kurulum (kullanıcı kendisi indirir).
+	InstallCmd []string
+	// VersionFlag — cemi listesinde sürümü göstermek için (örn. "--version").
 	VersionFlag string
+	// RunFlags — cem aracı çalıştırırken eklenen flag'ler. Boşsa stdin'le çağrılır;
+	// "-p" gibi tek-atış flag'i, AI CLI'larının interaktif REPL'e geçmesini önler.
+	RunFlags []string
 }
 
 // KnownTools — desteklenen AI CLI araçları. Description kullanıcıya gösterilir.
@@ -74,11 +79,12 @@ var KnownTools = map[string]ToolMeta{
 		Description: "Anthropic Claude Code (anthropic.com)",
 		InstallCmd:  []string{"npm", "install", "-g", "@anthropic-ai/claude-code"},
 		VersionFlag: "--version",
+		RunFlags:    []string{"-p"}, // print mode: bir cevap üret, REPL'e girme
 	},
 	"agy": {
 		Name:        "Antigravity",
-		Description: "Google Antigravity — autonomous coding agent (formerly Gemini CLI)",
-		InstallCmd:  []string{"npm", "install", "-g", "@google/antigravity-cli"},
+		Description: "Google Antigravity — masaüstü IDE (CLI paketi henüz yok). İndir: https://antigravity.google.com",
+		InstallCmd:  nil,
 		VersionFlag: "--version",
 	},
 	"aider": {
@@ -90,9 +96,10 @@ var KnownTools = map[string]ToolMeta{
 	"gemini": {
 		Name:        "Gemini",
 		Description: "Google Gemini CLI",
-		Deprecated:  "personal use ends 2026-06-16 — prefer 'agy' (Antigravity)",
+		Deprecated:  "kişisel kullanım 2026-06-16'da sona eriyor",
 		InstallCmd:  []string{"npm", "install", "-g", "@google/gemini-cli"},
 		VersionFlag: "--version",
+		RunFlags:    []string{"-p"}, // print mode (non-interactive)
 	},
 	"gpt": {
 		Name:        "Codex",

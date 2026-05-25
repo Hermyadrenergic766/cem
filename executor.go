@@ -97,7 +97,8 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 		return err
 	}
 
-	cmd := exec.Command(bin)
+	meta := KnownTools[toolKey]
+	cmd := exec.Command(bin, meta.RunFlags...)
 	cmd.Stdin = strings.NewReader(input)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -118,7 +119,8 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 		return "", err
 	}
 
-	cmd := exec.Command(bin)
+	meta := KnownTools[toolKey]
+	cmd := exec.Command(bin, meta.RunFlags...)
 	cmd.Stdin = strings.NewReader(input)
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()

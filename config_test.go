@@ -72,8 +72,10 @@ func TestKnownTools_HasExpectedKeys(t *testing.T) {
 		if meta.Name == "" {
 			t.Errorf("%s: Name boş", key)
 		}
-		if len(meta.InstallCmd) == 0 {
-			t.Errorf("%s: InstallCmd boş", key)
+		// InstallCmd nil → manuel kurulum tool'u (Antigravity gibi).
+		// []string{} ise hatalı: tanımsız.
+		if meta.InstallCmd != nil && len(meta.InstallCmd) == 0 {
+			t.Errorf("%s: InstallCmd boş ([]string{}); nil yapın veya komut ekleyin", key)
 		}
 	}
 }
