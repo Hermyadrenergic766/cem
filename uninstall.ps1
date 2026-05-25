@@ -1,5 +1,12 @@
-# ⚡ CEM — Windows Kaldırma Scripti
+﻿# ⚡ CEM — Windows Kaldırma Scripti
 # iwr cem.pw/uninstall.ps1 -UseB | iex
+
+# UTF-8 çıktı (Türkçe karakter desteği — PS 5.1 + 7.x)
+try {
+    [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+    $OutputEncoding           = [System.Text.UTF8Encoding]::new()
+    if (Get-Command chcp -ErrorAction SilentlyContinue) { chcp 65001 > $null }
+} catch { }
 
 $ErrorActionPreference = "Stop"
 
