@@ -46,12 +46,14 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		if roles.Thinker == "" {
 			return errMissingRole("thinker")
 		}
+		printAIHeader("🧠 thinker", roles.Thinker)
 		return runTool(roles.Thinker, rc, input, "🧠")
 
 	case ModeWrite:
 		if roles.Writer == "" {
 			return errMissingRole("writer")
 		}
+		printAIHeader("✍️  writer", roles.Writer)
 		return runTool(roles.Writer, rc, input, "✍️")
 
 	case ModePair:
@@ -68,7 +70,7 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		if err != nil {
 			return err
 		}
-		fmt.Println(styleDim.Render("  🧠 " + roles.Thinker + " analizi:"))
+		printAIHeader("🧠 thinker", roles.Thinker)
 		fmt.Println(thought)
 
 		// Writer kararı:
@@ -84,11 +86,19 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		}
 
 		fmt.Println()
-		fmt.Println(styleDim.Render("  ✍️  " + roles.Writer + " yazıyor..."))
+		printAIHeader("✍️  writer", roles.Writer)
 		writerInput := input + "\n\n--- Thinker analizi ---\n" + thought
 		return runTool(roles.Writer, rc, writerInput, "✍️")
 	}
 	return fmt.Errorf("bilinmeyen mod")
+}
+
+// printAIHeader — her AI çıktısının üstüne kim olduğunu belirten net bir başlık
+// basar. Örnek: "─── 🧠 thinker · claude ───"
+func printAIHeader(role, name string) {
+	bar := strings.Repeat("─", 3)
+	fmt.Println()
+	fmt.Println(styleBold.Render(fmt.Sprintf("  %s %s · %s %s", bar, role, name, bar)))
 }
 
 func errMissingRole(name string) error {
