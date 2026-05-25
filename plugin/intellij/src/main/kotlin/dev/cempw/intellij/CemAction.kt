@@ -5,6 +5,8 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
+import com.intellij.openapi.editor.Editor
+import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import java.io.BufferedReader
@@ -30,11 +32,24 @@ sealed class CemAction(private val mode: Mode) : AnAction() {
 
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.project ?: return
-        val editor = event.getData(CommonDataKeys.EDITOR)
-        val text = editor?.selectionModel?.selectedText
-            ?: editor?.document?.text
+        // Önce action context'inden editor — editor focus'tayken bu doludur.
+        // Tool window'dan kısayol bastıysa context boş; FileEditorManager'dan
+        // son seçili editörü çek (kullanıcı tool window'a tıklamış olsa bile
+        // arka plandaki kod editörü kalır).
+        val editor: Editor? = event.getData(CommonDataKeys.EDITOR)
+            ?: FileEditorManager.getInstance(project).selectedTextEditor
+        if (editor == null) {
+            Messages.showWarningDialog(
+                project,
+                "Açık bir editör yok. Önce bir dosya aç ve içeriğine tıkla, sonra kısayolu kullan.",
+                "cem",
+            )
+            return
+        }
+        val text = editor.selectionModel.selectedText?.takeIf { it.isNotBlank() }
+            ?: editor.document.text.takeIf { it.isNotBlank() }
             ?: run {
-                Messages.showWarningDialog(project, "No selection or open editor.", "cem")
+                Messages.showWarningDialog(project, "Dosya boş veya seçim yok.", "cem")
                 return
             }
 
