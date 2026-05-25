@@ -37,9 +37,9 @@ not apply**:
 | Cache decorator / rate limit | Not relevant |
 | Swagger UI / `src/swagger.py` | Not an API |
 
-**Still applies:** Docker ban (bare-metal binaries), `nala` over `apt`,
-nginx production standards (HTTP/3, custom `Server` header, fail2ban) for
-the `cem.pw` host.
+**Still applies:** Docker ban (bare-metal binaries), `nala` over `apt`.
+The `cem.pw` web host runs **Apache2** on an existing shared box; the
+nginx production standards from the global guide do not apply here.
 
 ---
 
@@ -66,13 +66,6 @@ cem/
 ├── Makefile            — build / dev / install / clean / tidy / test
 ├── go.mod / go.sum
 ├── .github/workflows/release.yml  — 7-platform binaries + SHA256SUMS
-├── .gitlab-ci.yml      — Optional mirror CI (kept; canonical is GitHub)
-├── nginx/
-│   ├── nginx.conf
-│   ├── setup.sh
-│   ├── snippets/        ssl.conf, security-headers.conf, block-rules.conf
-│   ├── sites-available/ cem.pw.conf (routes: /install /uninstall /r/* /docs /health)
-│   └── fail2ban/jail.d/ cem-nginx.conf
 ├── README.md / README.tr.md
 ├── CLAUDE.md / CLAUDE.tr.md
 ├── OPERATIONS.md / OPERATIONS.tr.md
@@ -126,13 +119,11 @@ cem/
 
 ## Git & Release
 
-- **Canonical repo:** `https://github.com/muslu/cem.git`
-- **Mirror:** `.gitlab-ci.yml` kept in tree in case the project is mirrored
-  to a self-hosted GitLab. It will only run if pushed there.
+- **Canonical repo:** `https://github.com/muslu/cem.git` (only remote)
 - **Binary downloads:**
   `install.sh` / `install.ps1` pull directly from
   `github.com/muslu/cem/releases/latest/download/...`. The `cem.pw/r/*`
-  nginx route proxies the same URL for older scripts.
+  Apache rewrite proxies the same URL for older scripts.
 - **Tags:** `vMAJOR.MINOR.PATCH` (semver). `LDFLAGS -X main.version=...`
   is set by both Makefile and CI.
 
