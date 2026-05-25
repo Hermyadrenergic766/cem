@@ -17,6 +17,9 @@ var cemirRootCmd = &cobra.Command{
 	Version: version,
 	Args:    cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
+		if yes, _ := cmd.Flags().GetBool("yes"); yes {
+			autoYes = true
+		}
 		PrintBanner(BannerCemir)
 
 		cfg, err := loadGlobalConfig()
@@ -45,7 +48,9 @@ var cemirRootCmd = &cobra.Command{
 	},
 }
 
-func initCemirCmd() {}
+func initCemirCmd() {
+	cemirRootCmd.Flags().BoolP("yes", "y", false, "tüm onayları otomatik kabul et")
+}
 
 // removeAll — kurulu tüm araçları onay sorarak sırayla kaldırır
 func removeAll(cfg *GlobalConfig) {

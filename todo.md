@@ -62,14 +62,41 @@
       reduced to one source of truth
 - [x] All MD docs split English/Turkish (README/CLAUDE/OPERATIONS/todo)
 
-## 10. Open (deferred / decision pending)
-- [ ] `.claude/agents/` and `.claude/skills/` — leftovers from the
-      `autoinstalltrixie` project. Decision pending: delete or replace
-      with CEM-specific agents (e.g., `tool-installer`, `role-switcher`)?
-      `.claude/` is gitignored.
-- [ ] More test coverage: `executor_test.go`, `history_test.go`,
-      OS-integration tests
-- [ ] LICENSE file (README references MIT but no LICENSE in the tree)
-- [ ] `cem.pw/docs` static site (referenced from install scripts)
-- [ ] Confirm exact install commands for the 5 newly-added AI CLIs —
-      some `InstallCmd` values are best-guess upstream names
+## 10. v0.1.x deployment session (live tags v0.1.0 → v0.1.15)
+- [x] cem.pw → Apache vhost (production), `/install` `/uninstall` `/r/*`
+      UA-aware (PowerShell → .ps1, curl → .sh)
+- [x] GitLab tracks removed, GitHub muslu canonical
+- [x] PowerShell UTF-8: BOM dropped, charset=utf-8 header,
+      `[Console]::OutputEncoding=UTF8` in scripts
+- [x] install.sh escape sequences (`$(printf '\033')`) — colors render
+- [x] "döküman" → "doküman", docs link → github.com/muslu/cem
+- [x] `cem update` — GitHub API ile son sürüm önizlemesi, Windows
+      self-replace via .old rename, Linux sudo escalation
+- [x] `cem uninstall` Windows self-delete via detached cmd
+- [x] Tool lineup trimmed 10 → 4: claude, agy, gpt(codex), cursor
+- [x] Native installers: claude.ai/install.sh, antigravity.google/cli/...,
+      cursor.com/install
+- [x] `ToolMeta.Binary` — toolKey ≠ PATH binary (cursor→cursor-agent, gpt→codex)
+- [x] `ToolMeta.RunFlags` + `PromptAsArg` (codex exec, agy/cursor -p arg)
+- [x] `fallbackInstallPath` for installer's PATH-unaware drops (agy, cursor)
+- [x] Pair mode skip logic (thinker == writer; no code in input/output)
+- [x] `ensureDep` Linux node via **nvm** (NodeSource glibc 2.28+ kills bionic);
+      `depVersionOK` rejects ancient npm 3.x
+- [x] `cemi -y` + `cemir -y` flags; askYN honors autoYes
+- [x] `cemir all` shell-install path support (curl|bash binaries deleted)
+- [x] **API key management** — `cem keys add/list/remove` + provider
+      rotation on rate-limit (anthropic, openai)
+- [x] Silent install: cmd output captured, only last 12-15 lines on error
+- [x] Codex: `--skip-git-repo-check` so it runs outside git repos
+
+## 11. Open (deferred / decision pending)
+- [ ] Ubuntu 18.04 (glibc 2.27) — Codex unreachable; nvm Node 24 still
+      requires 2.28. No clear path without OS upgrade. Document as
+      known-incompatible.
+- [ ] Antigravity `iwr | iex` Windows output sometimes hides installer
+      progress — investigate or accept.
+- [ ] Cursor + Antigravity API key rotation: providers don't publish CLI
+      env-var docs yet (OAuth only). Skipped from rotation.
+- [ ] `executor_test.go`, `history_test.go` — coverage gap remains.
+- [ ] LICENSE file (README references MIT but no LICENSE in the tree).
+- [ ] `.claude/agents/` cleanup decision still pending.

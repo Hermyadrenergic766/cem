@@ -21,11 +21,22 @@ type InstalledTool struct {
 	Version string `yaml:"version,omitempty"`
 }
 
+// APIKey — bir provider için saklanan tek bir API key. Label opsiyonel (insan
+// okunabilir etiket: "personal", "company", "free-tier").
+type APIKey struct {
+	Value string `yaml:"value"`
+	Label string `yaml:"label,omitempty"`
+}
+
 type GlobalConfig struct {
 	Version string                   `yaml:"version"`
 	Tools   map[string]InstalledTool `yaml:"tools"`
 	Roles   Roles                    `yaml:"roles"`
 	Setup   bool                     `yaml:"setup_done"`
+	// APIKeys — provider → key listesi. cem aracı çağırırken sırayla denenir;
+	// rate-limit hatasında bir sonrakine geçer. Provider adları:
+	// "anthropic" (Claude), "openai" (Codex). agy/cursor OAuth ile çalışır.
+	APIKeys map[string][]APIKey `yaml:"api_keys,omitempty"`
 }
 
 type ProjectConfig struct {
@@ -81,6 +92,12 @@ type ToolMeta struct {
 	// false ise (varsayılan) stdin üzerinden pipe edilir. Codex 'exec "prompt"'
 	// gibi pozisyonel pattern bekleyen araçlar için gerekli.
 	PromptAsArg bool
+	// Provider — bu tool'un kullandığı API provider'ı ("anthropic", "openai").
+	// Boş ise API key rotasyonu devre dışı (OAuth-only tool: agy, cursor).
+	Provider string
+	// APIKeyEnv — provider'ın aktif key'i hangi env değişkeniyle alacağı.
+	// Boş ise key inject edilmez (CLI kendi auth'unu kullanır).
+	APIKeyEnv string
 }
 
 // KnownTools — desteklenen AI CLI araçları. Description kullanıcıya gösterilir.
@@ -109,8 +126,10 @@ var KnownTools = map[string]ToolMeta{
 		Description: "OpenAI Codex CLI (developers.openai.com/codex)",
 		InstallCmd:  []string{"npm", "install", "-g", "@openai/codex"},
 		VersionFlag: "--version",
-		RunFlags:    []string{"exec"}, // non-interactive subcommand
-		PromptAsArg: true,              // codex exec "prompt"
+		RunFlags:    []string{"exec", "--skip-git-repo-check"}, // non-interactive, herhangi bir dizinden
+		PromptAsArg: true,                                       // codex exec "prompt"
+		Provider:    "openai",
+		APIKeyEnv:   "OPENAI_API_KEY",
 	},
 	"cursor": {
 		Name:             "Cursor",

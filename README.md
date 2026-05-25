@@ -10,11 +10,11 @@
 ```
 
 > **One command, many AIs.**
-> CEM — birden fazla AI CLI aracını (Claude · Antigravity · Codex · Cursor) tek bir komutla yöneten Go orchestrator. Bir AI **düşünür**, bir AI **yazar**; `pair` modunda düşünenin analizi yazana beslenir.
+> CEM is a Go orchestrator that drives multiple AI CLIs (Claude · Antigravity · Codex · Cursor) from a single command. One AI **thinks**, another **writes**; in `pair` mode the thinker's analysis feeds the writer.
 
 - Domain: [cem.pw](https://cem.pw)
 - Source: <https://github.com/muslu/cem>
-- Türkçe: [README.tr.md](README.tr.md)
+- Türkçe sürüm: [README.tr.md](README.tr.md)
 
 ---
 
@@ -25,18 +25,25 @@
 curl -fsSL cem.pw/install | sh
 ```
 
-**Windows (PowerShell):**
+**WSL (Windows Subsystem for Linux):**
+```sh
+curl -fsSL cem.pw/install | sh
+```
+> WSL is a Linux environment; the Linux command above runs as-is. Use the PowerShell command below only on **native** Windows.
+
+**Windows — PowerShell required (not CMD, not Git Bash):**
 ```powershell
 irm cem.pw/install | iex
 ```
+> ⚠ Run this in **PowerShell**. `irm` does not exist in `cmd.exe` or Git Bash. If your prompt shows `PS C:\` you are in PowerShell.
 
-Installer OS/arch tespit eder, 3 binary (`cem`, `cemi`, `cemir`) indirir, Unix'te `/usr/local/bin`'e (veya yazılamazsa `~/.local/bin`'e), Windows'ta `%LOCALAPPDATA%\cem\bin`'e koyar.
+The installer detects OS/arch, downloads the three binaries (`cem`, `cemi`, `cemir`) from `cem.pw/r/` (which proxies to GitHub Releases) and drops them in `/usr/local/bin` (or `~/.local/bin` if not writable) on Unix/WSL, or `%LOCALAPPDATA%\cem\bin` on Windows. The server's User-Agent detection picks the right script automatically: PowerShell → `.ps1`, curl/wget → `.sh`.
 
 ### Update / Uninstall
 
 ```sh
-cem update      # cem.pw'den son sürümü çeker (GitHub API ile mevcut/yeni karşılaştırır)
-cem uninstall   # 3 binary + config klasörü
+cem update      # Pulls the latest release (prints "current vs latest" first)
+cem uninstall   # Removes the three binaries + the config directory
 ```
 
 ---
@@ -44,80 +51,106 @@ cem uninstall   # 3 binary + config klasörü
 ## Quick Start
 
 ```sh
-cem "fibonacci nedir?"            # thinker (düşünen AI tek başına)
-cem -w "fibonacci.py yaz"         # writer (yazan AI tek başına)
-cem -p "fibonacci.py yaz"         # pair: thinker → writer
+cem "what is fibonacci?"           # thinker only
+cem -w "write fibonacci.py"        # writer only
+cem -p "write fibonacci.py"        # pair: thinker → writer
 ```
 
-İlk çalıştırma wizard'ı açar; rolleri sonradan değiştir:
+The first run opens a setup wizard. Change roles later with:
+
 ```sh
-cem roles claude agy              # global: thinker=claude, writer=agy
-cem roles --here claude codex     # sadece bu dizin için (.cem.yaml)
-cem init                          # proje-spesifik wizard
+cem roles claude agy               # global: thinker=claude, writer=agy
+cem roles --here claude codex      # this directory only (.cem.yaml)
+cem init                           # project-specific wizard
 ```
 
-`pair` modu akıllı: **thinker == writer** ise writer atlanır; ne soruda ne thinker çıktısında kod istemi yoksa writer atlanır (boşa LLM çağrısı yok).
+`pair` mode is smart: if **thinker == writer**, the second call is skipped (no duplicate output); if neither the prompt nor the thinker's analysis hints at code, the writer is skipped (no wasted LLM call).
 
 ---
 
 ## Supported AI CLIs
 
-| Anahtar | Araç | Kurulum kaynağı | Non-interactive |
+| Key | Tool | Install source | Non-interactive call |
 |---|---|---|---|
-| `claude` | **Claude Code** (Anthropic) | [native installer](https://code.claude.com/docs/en/quickstart) — auto-update | `claude -p` (stdin) |
-| `agy` | **Antigravity** (Google) | [native installer](https://antigravity.google/docs/cli-getting-started) | `agy -p` (stdin) |
+| `claude` | **Claude Code** (Anthropic) | [native installer](https://code.claude.com/docs/en/quickstart) — auto-updates | `claude -p` (stdin) |
+| `agy` | **Antigravity** (Google) | [native installer](https://antigravity.google/docs/cli-getting-started) | `agy -p "prompt"` |
 | `gpt` | **Codex** (OpenAI) | `npm i -g @openai/codex` | `codex exec "prompt"` |
 | `cursor` | **Cursor agent** | [native installer](https://cursor.com/cli) | `cursor-agent -p "prompt"` |
 
 ```sh
-cemi                              # mevcut & yüklenebilir
-cemi claude                       # tek araç (önkoşulları algılar: npm/Node)
-cemi all                          # 4'ünü birden
-cemir agy                         # tek araç kaldır (shell-install da silinir)
-cemir all                         # hepsini kaldır
+cemi                               # available & installed
+cemi claude                        # install one (handles missing prerequisites: npm/Node)
+cemi all                           # install all four
+cemi all -y                        # all four, no prompts
+cemir agy                          # uninstall one (shell-installed binaries are also removed)
+cemir all -y                       # uninstall everything, no prompts
 ```
 
-`cemi <tool>` çağrısı **npm/Node** gerektiriyor ama bulunamıyorsa (veya çok eski — npm 3 gibi) → otomatik olarak `winget` / `brew` / NodeSource `apt-get` ile Node LTS kurar (kullanıcı onayıyla).
+If `cemi <tool>` needs **npm/Node** and it is missing (or too old — npm 3 etc.), cem offers to auto-install Node LTS via `winget` (Windows), `brew` (macOS), or `nvm` (Linux — picked over NodeSource because NodeSource now requires glibc 2.28+, which kills Ubuntu 18.04).
 
 ---
 
 ## Pair Mode
 
 ```sh
-cem -p "binary search'ü TypeScript'te yaz"
+cem -p "write a binary search in TypeScript"
 ```
 
-1. 🧠 **Thinker** (örn. `claude`) sorunu çözer — algoritma, edge cases, tip seçimi
-2. ✍️ **Writer** (örn. `agy`) thinker'ın analizini + asıl soruyu input alır, kodu yazar
+1. 🧠 **Thinker** (e.g. `claude`) reasons about the problem — algorithm choice, edge cases, type signatures.
+2. ✍️ **Writer** (e.g. `agy`) receives both the original prompt and the thinker's analysis, then writes the code.
 
-Skip kuralları:
+Skip rules:
 
-| Durum | Davranış |
+| Situation | Behaviour |
 |---|---|
-| `thinker == writer` (ikisi de `claude`) | Writer atlanır (duplikasyon engeli) |
-| Soru kod istemiyor ve thinker çıktısında \`\`\` yok | Writer atlanır |
-| Diğer | Writer thinker analizini bağlam alarak çalışır |
+| `thinker == writer` (both `claude`) | Writer is skipped (no duplication) |
+| Prompt has no code intent and thinker output has no \`\`\` block | Writer is skipped |
+| Otherwise | Writer runs with the thinker's analysis as context |
+
+---
+
+## API Key Management & Auto-Rotation
+
+For long projects that you don't want interrupted by a single key's rate limit, store **multiple keys per provider** and cem will rotate automatically.
+
+```sh
+cem keys add anthropic             # interactive: key + optional label
+cem keys add openai
+cem keys list                      # masked view
+cem keys remove anthropic 1        # remove the first anthropic key
+```
+
+Supported providers:
+
+| Provider | Env var | Tool |
+|---|---|---|
+| `anthropic` | `ANTHROPIC_API_KEY` | Claude (`claude`) |
+| `openai` | `OPENAI_API_KEY` | Codex (`gpt`/`codex`) |
+
+> `agy` (Antigravity) and `cursor` use Google/Cursor OAuth; the CLIs do not publish an official API-key env yet, so they are not in the rotation set.
+
+Rotation trigger: if stderr contains `rate limit`, `429`, `quota`, `too many requests`, or `overloaded`, cem advances to the next key. If all keys are exhausted, the last error is returned.
 
 ---
 
 ## Diagnostics
 
 ```sh
-cem doctor                        # sistem + roller + araçlar + PATH raporu
-cem status                        # özet
-cem roles                         # aktif roller
-cem history                       # son komutlar (TSV)
-cem history -n 50                 # son 50
+cem doctor                         # system + roles + tools + PATH report
+cem status                         # short summary
+cem roles                          # active roles
+cem history                        # recent commands (TSV)
+cem history -n 50                  # last 50
 cem history --clear
 ```
 
-`~/.cem/history.log` — tab-separated log.
+`~/.cem/history.log` — tab-separated log of every cem invocation.
 
 ---
 
 ## Config
 
-`~/.cem/config.yaml` (global) ve proje kökünde `.cem.yaml` (override):
+`~/.cem/config.yaml` (global) and `.cem.yaml` at a project root (override):
 
 ```yaml
 roles:
@@ -129,9 +162,19 @@ tools:
     command: claude
     version: 2.1.143
   agy:
-    # Native installer PATH'i güncellemezse, post-install yakaladığımız mutlak yol:
+    # When a native installer doesn't refresh PATH for the current process,
+    # cem records the absolute path it discovered post-install:
     command: C:\Users\Muslu\AppData\Local\agy\bin\agy.exe
     version: 1.2.0
+
+api_keys:
+  anthropic:
+    - value: sk-ant-...
+      label: personal
+    - value: sk-ant-...
+      label: company-backup
+  openai:
+    - value: sk-proj-...
 ```
 
 ---
@@ -141,12 +184,12 @@ tools:
 ```sh
 git clone https://github.com/muslu/cem.git
 cd cem
-make build                        # 3 binary → build/
-make install                      # /usr/local/bin (sudo)
+make build                         # 3 binaries → build/
+make install                       # /usr/local/bin (sudo)
 go test ./...
 ```
 
-Sürüm `git describe --tags --always --dirty` çıktısından LDFLAGS ile enjekte edilir.
+The version string is injected from `git describe --tags --always --dirty` via LDFLAGS.
 
 ---
 

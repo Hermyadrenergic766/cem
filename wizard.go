@@ -110,6 +110,18 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 	return nil
 }
 
+// printTail — metnin son n satırını dim renkle yazdırır (hata bağlamı için).
+func printTail(s string, n int) {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	if len(lines) > n {
+		lines = lines[len(lines)-n:]
+		fmt.Println(styleDim.Render("  ... (çıktı kısaltıldı)"))
+	}
+	for _, l := range lines {
+		fmt.Println(styleDim.Render("  " + l))
+	}
+}
+
 // pickInstallShell — platforma uyan shell-install komutunu döndürür; yoksa "".
 func pickInstallShell(meta ToolMeta) string {
 	if runtime.GOOS == "windows" {
@@ -137,9 +149,12 @@ func ensureDep(bin string) bool {
 	if !askYN("  Şimdi kurulsun mu?") {
 		return false
 	}
-	install.Stdout = os.Stdout
-	install.Stderr = os.Stderr
+	// Output'u yakala, başarısız olunca son satırları göster.
+	var depBuf strings.Builder
+	install.Stdout = &depBuf
+	install.Stderr = &depBuf
 	if err := install.Run(); err != nil {
+		printTail(depBuf.String(), 12)
 		fmt.Println(styleError.Render("  ✗ kurulum başarısız: " + err.Error()))
 		return false
 	}
@@ -265,9 +280,12 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 	} else {
 		cmd = exec.Command(meta.InstallCmd[0], meta.InstallCmd[1:]...)
 	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// Sessiz kurulum: çıktıyı buffer'a, hata durumunda son satırlar gösterilir.
+	var instBuf strings.Builder
+	cmd.Stdout = &instBuf
+	cmd.Stderr = &instBuf
 	if err := cmd.Run(); err != nil {
+		printTail(instBuf.String(), 15)
 		return err
 	}
 

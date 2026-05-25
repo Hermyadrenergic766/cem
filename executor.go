@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -118,6 +120,57 @@ func resolveCommand(toolKey string, rc *ResolvedConfig) string {
 	return binName
 }
 
+// rateLimitRe — stderr'de rate-limit / quota imzaları (provider'lar arası).
+var rateLimitRe = regexp.MustCompile(`(?i)(rate.?limit|quota|429|too many requests|usage limit|overloaded)`)
+
+// errRateLimit — withKeyRotation iç sinyali. Dışarı sızmaz; tüm key'ler bittiğinde
+// gerçek alt-process hatasına dönüşür.
+var errRateLimit = errors.New("rate limit / quota")
+
+func looksLikeRateLimit(stderr string) bool {
+	return rateLimitRe.MatchString(stderr)
+}
+
+// withKeyRotation — meta.Provider varsa cfg.APIKeys[provider] içinden sırayla
+// her key'i env değişkeni olarak set edip fn'i çağırır. fn errRateLimit
+// dönerse sonraki key denenir. Provider tanımlı değilse fn bir kez OS env'iyle
+// çalıştırılır (CLI'ın kendi auth'u devrede).
+func withKeyRotation(meta ToolMeta, cfg *GlobalConfig, fn func(env []string) error) error {
+	baseEnv := os.Environ()
+	if meta.Provider == "" || meta.APIKeyEnv == "" {
+		return fn(baseEnv)
+	}
+	keys := cfg.APIKeys[meta.Provider]
+	if len(keys) == 0 {
+		// Key tanımlanmamış → CLI'ın mevcut auth'unu kullan
+		return fn(baseEnv)
+	}
+	var lastErr error
+	for i, k := range keys {
+		env := append(append([]string{}, baseEnv...), meta.APIKeyEnv+"="+k.Value)
+		// Aynı env değişkeni baseEnv'de varsa Go'nun exec son tanımı kullanır,
+		// yani append yeterli.
+		err := fn(env)
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, errRateLimit) {
+			return err // başka bir hata: tekrar denemenin anlamı yok
+		}
+		lastErr = err
+		label := k.Label
+		if label == "" {
+			label = fmt.Sprintf("#%d", i+1)
+		}
+		if i+1 < len(keys) {
+			fmt.Println(styleWarn.Render(fmt.Sprintf("  ⚠ %s rate limit — sonraki key'e geçiliyor", label)))
+		} else {
+			fmt.Println(styleError.Render(fmt.Sprintf("  ✗ tüm %s key'leri rate limit", meta.Provider)))
+		}
+	}
+	return lastErr
+}
+
 // codeRequestRe — input'ta kod yazma niyetini gösteren kelimeler (TR + EN).
 var codeRequestRe = regexp.MustCompile(`(?i)\b(yaz|kod|script|fonksiyon|class|method|implement|kodla|oluştur|üret|döndür|export|function|code|write|build|generate|refactor|debug|fix)\b`)
 
@@ -193,18 +246,26 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 	if meta.PromptAsArg {
 		args = append(args, input)
 	}
-	cmd := exec.Command(bin, args...)
-	if !meta.PromptAsArg {
-		cmd.Stdin = strings.NewReader(input)
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		fmt.Println(styleError.Render("✗ " + bin + " hata: " + err.Error()))
+	return withKeyRotation(meta, rc.Global, func(env []string) error {
+		cmd := exec.Command(bin, args...)
+		if !meta.PromptAsArg {
+			cmd.Stdin = strings.NewReader(input)
+		}
+		cmd.Stdout = os.Stdout
+		// stderr'i hem konsola yansıt hem buffer'a yaz (rate-limit imzasını yakalamak için)
+		var errBuf bytes.Buffer
+		cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
+		cmd.Env = env
+		err := cmd.Run()
+		if err != nil && looksLikeRateLimit(errBuf.String()) {
+			return errRateLimit
+		}
+		if err != nil {
+			fmt.Println(styleError.Render("✗ " + bin + " hata: " + err.Error()))
+		}
 		return err
-	}
-	return nil
+	})
 }
 
 // captureTool — pair modu için: çıktıyı yakalar
@@ -221,12 +282,22 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 	if meta.PromptAsArg {
 		args = append(args, input)
 	}
-	cmd := exec.Command(bin, args...)
-	if !meta.PromptAsArg {
-		cmd.Stdin = strings.NewReader(input)
-	}
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
+	var out []byte
+	err := withKeyRotation(meta, rc.Global, func(env []string) error {
+		cmd := exec.Command(bin, args...)
+		if !meta.PromptAsArg {
+			cmd.Stdin = strings.NewReader(input)
+		}
+		var errBuf bytes.Buffer
+		cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
+		cmd.Env = env
+		var runErr error
+		out, runErr = cmd.Output()
+		if runErr != nil && looksLikeRateLimit(errBuf.String()) {
+			return errRateLimit
+		}
+		return runErr
+	})
 	if err != nil {
 		return "", err
 	}
