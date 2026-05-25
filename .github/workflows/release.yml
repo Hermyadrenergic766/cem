@@ -113,18 +113,32 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Sync version to tag
+      - name: Sync version to tag (semver-coerced)
         working-directory: plugin/vscode
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          RAW="${GITHUB_REF_NAME#v}"
+          # VS Code Marketplace strict semver ister (3 segment); calendar tag
+          # 'YYYYMMDD.MM' 2 segmentli olduğundan '.0' ekleyerek geçerli semver
+          # üretiyoruz: 20260525.03 → 20260525.3.0
+          if [[ "$RAW" == *.*.* ]]; then
+            VERSION="$RAW"
+          else
+            MAJOR="${RAW%%.*}"
+            MINOR="${RAW##*.}"
+            # Strip leading zeros from MINOR (semver doesn't allow them)
+            MINOR=$((10#$MINOR))
+            VERSION="${MAJOR}.${MINOR}.0"
+          fi
+          echo "Tag: $RAW → semver: $VERSION"
           node -e "let p=require('./package.json');p.version='${VERSION}';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2));"
-          grep version package.json | head
+          grep '"version"' package.json | head
 
       - name: Install deps + package
         working-directory: plugin/vscode
         run: |
           npm install --no-audit --no-fund --no-package-lock
-          npx vsce package --no-dependencies --out cem-vscode-${GITHUB_REF_NAME}.vsix
+          # Outfile keeps the tag-format for download URL consistency
+          npx vsce package --no-dependencies --out "cem-vscode-${GITHUB_REF_NAME}.vsix"
 
       - uses: actions/upload-artifact@v4
         with:
