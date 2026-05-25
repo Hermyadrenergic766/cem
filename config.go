@@ -132,9 +132,13 @@ var KnownTools = map[string]ToolMeta{
 		InstallShellUnix: "curl -fsSL https://claude.ai/install.sh | bash",
 		InstallShellWin:  "irm https://claude.ai/install.ps1 | iex",
 		VersionFlag:      "--version",
-		RunFlags:         []string{"-p"},                 // print mode (non-interactive)
-		ModelFlag:        "--model",
-		Models:           []string{"opus", "sonnet", "haiku"}, // alias + son sürümler
+		RunFlags:         []string{"-p"}, // print mode (non-interactive)
+		// claude -p PROMPT pozisyonel argüman alır. Stdin'le bırakırsak stdout
+		// TTY olduğunda (ModeThink/Write) REPL'e geçip kilitleniyor.
+		PromptAsArg:    true,
+		ModelFlag:      "--model",
+		ModelBeforeRun: true, // -p PROMPT'un arasına --model girmesin
+		Models:         []string{"opus", "sonnet", "haiku"},
 	},
 	"agy": {
 		Name:             "Antigravity",
@@ -144,10 +148,11 @@ var KnownTools = map[string]ToolMeta{
 		VersionFlag:      "--version",
 		RunFlags:         []string{"-p"},
 		PromptAsArg:      true, // agy -p "prompt" (— -p bir argüman bekliyor)
-		// NOT: Antigravity CLI'nın model seçim flag'i yok (agy --help → -p, -c, --sandbox,
-		// --print-timeout, vs). Model Google tarafında ya default ya da agy'nin
-		// kendi config dosyasından (varsa) belirleniyor. cem'in --model'i geçirmesi
-		// 'flags provided but not defined' hatasıyla agy'yi düşürüyordu.
+		// NOT: Antigravity CLI'nın --model flag'i henüz yok (agy --help: -p, -c,
+		// --sandbox, --print-timeout). Model Google tarafında seçiliyor. Yine de
+		// Models listesi gösterilir ki wizard'da tercih kaydedilebilsin —
+		// CLI ileride --model eklerse ModelFlag'i set etmek yeterli olacak.
+		Models:  []string{"gemini-3-pro", "gemini-3-flash"},
 		AuthCmd: []string{"login"},
 	},
 	"gpt": {

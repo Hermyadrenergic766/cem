@@ -172,11 +172,17 @@ func printTail(s string, n int) {
 }
 
 // askModel — kullanıcıya bir tool için model seçtirir; seçimi cfg.Tools[key].Model'a
-// kaydeder. Tool için ModelFlag tanımlı değilse sessizce döner.
+// kaydeder. Models listesi boşsa sessizce döner. ModelFlag boşsa (örn. agy)
+// seçim alınır ama runtime'da kullanılmaz — kullanıcıya uyarı basılır.
 func askModel(toolKey, label string, cfg *GlobalConfig) {
 	meta, ok := KnownTools[toolKey]
-	if !ok || meta.ModelFlag == "" || len(meta.Models) == 0 {
+	if !ok || len(meta.Models) == 0 {
 		return
+	}
+	if meta.ModelFlag == "" {
+		fmt.Println(styleDim.Render(fmt.Sprintf(
+			"  ⓘ %s CLI'sı henüz --model flag'ini desteklemiyor — seçim kayda alınır, runtime'a etki etmez.",
+			meta.Name)))
 	}
 	fmt.Printf("  %s · %s için model:\n", styleBold.Render(label), styleBold.Render(meta.Name))
 	for i, m := range meta.Models {
@@ -195,13 +201,15 @@ func askModel(toolKey, label string, cfg *GlobalConfig) {
 
 	t := cfg.Tools[toolKey] // zero-value ok
 	switch resp {
-	case "", "0":
-		t.Model = "" // default
+	case "":
+		// Enter = mevcut seçimi koru (yukarıda ✓ ile gösterilen)
+		// Hiç yoksa CLI default kullanılır (t.Model zaten "" kalır)
+	case "0":
+		t.Model = "" // explicit default
 	default:
 		idx, err := strconv.Atoi(resp)
 		if err != nil || idx < 1 || idx > len(meta.Models)+1 {
-			fmt.Println(styleDim.Render("  geçersiz, default kullanılacak"))
-			t.Model = ""
+			fmt.Println(styleDim.Render("  geçersiz, mevcut/default korundu"))
 		} else if idx == len(meta.Models)+1 {
 			fmt.Print("  Model adı: ")
 			line, _ := reader.ReadString('\n')
