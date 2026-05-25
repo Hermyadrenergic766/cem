@@ -70,14 +70,16 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		} else {
 			thinkerLabel += " (default)"
 		}
+		// Header'ı ÖNCE bas — çıktı streaming geldiği için kullanıcı kimin
+		// konuştuğunu hemen bilsin.
+		printAIHeader("🧠 thinker", roles.Thinker, rc)
 		sp := StartSpinner("🧠 " + thinkerLabel + " düşünüyor...")
 		thought, err := captureToolWithSpinner(roles.Thinker, rc, input, sp)
 		sp.Stop() // captureTool içinde de stopWriter durdurabilir; idempotent
 		if err != nil {
 			return err
 		}
-		printAIHeader("🧠 thinker", roles.Thinker, rc)
-		fmt.Println(thought)
+		// thought zaten captureTool tarafından stream edildi; tekrar basmıyoruz.
 
 		// Writer kararı:
 		//   - Aynı AI ise (thinker == writer) tekrar çağırmak çıktıyı duplike eder.
@@ -453,20 +455,23 @@ func captureToolWithSpinner(toolKey string, rc *ResolvedConfig, input string, sp
 	}
 	meta := KnownTools[toolKey]
 	args := buildArgs(meta, toolKey, rc, input)
-	var out []byte
+	var captured bytes.Buffer
 	err := withKeyRotation(meta, rc.Global, func(env []string) error {
 		cmd := exec.Command(bin, args...)
 		if !meta.PromptAsArg {
 			cmd.Stdin = strings.NewReader(input)
 		}
+		captured.Reset()
+		// Stream + capture: thinker çıktısı plugin/terminal'e ANINDA akar
+		// ve buffer'a kopyalanır (writer fazı için).
+		cmd.Stdout = io.MultiWriter(os.Stdout, &captured)
 		var errBuf bytes.Buffer
 		cmd.Stderr = &stopWriter{
 			sp:    sp,
 			inner: io.MultiWriter(os.Stderr, &errBuf),
 		}
 		cmd.Env = env
-		var runErr error
-		out, runErr = cmd.Output()
+		runErr := cmd.Run()
 		if runErr != nil && looksLikeRateLimit(errBuf.String()) {
 			return errRateLimit
 		}
@@ -478,5 +483,5 @@ func captureToolWithSpinner(toolKey string, rc *ResolvedConfig, input string, sp
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimRight(string(out), "\n"), nil
+	return strings.TrimRight(captured.String(), "\n"), nil
 }
