@@ -248,7 +248,10 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 	var cmd *exec.Cmd
 	if shellCmd != "" {
 		if runtime.GOOS == "windows" {
-			cmd = exec.Command("cmd", "/c", shellCmd)
+			// Doğrudan PowerShell'e ver. cmd /c üzerinden geçince çift-quote
+			// nesting bazen child output'unu yutuyor.
+			cmd = exec.Command("powershell", "-NoProfile",
+				"-ExecutionPolicy", "Bypass", "-Command", shellCmd)
 		} else {
 			cmd = exec.Command("sh", "-c", shellCmd)
 		}

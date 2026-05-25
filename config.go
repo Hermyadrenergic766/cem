@@ -90,7 +90,7 @@ var KnownTools = map[string]ToolMeta{
 		Name:             "Antigravity",
 		Description:      "Google Antigravity CLI (Gemini CLI'ın halefi, antigravity.google)",
 		InstallShellUnix: "curl -fsSL https://antigravity.google/cli/install.sh | bash",
-		InstallShellWin:  "powershell -NoProfile -Command \"iwr https://antigravity.google/cli/install.ps1 -UseB | iex\"",
+		InstallShellWin:  "iwr https://antigravity.google/cli/install.ps1 -UseB | iex",
 		VersionFlag:      "--version",
 		RunFlags:         []string{"-p"},
 	},

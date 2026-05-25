@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -40,6 +41,17 @@ func selfUpdate() error {
 		return fmt.Errorf("kendi yolu alınamadı: %w", err)
 	}
 	installDir := filepath.Dir(myPath)
+
+	// Önce GitHub'dan son sürümü öğren — kullanıcıya neyin geleceğini söyle.
+	latest, err := fetchLatestVersion()
+	if err == nil && latest != "" {
+		current := version // main paketindeki LDFLAGS değişkeni
+		if current == latest {
+			fmt.Println(styleSuccess.Render("  ✓ zaten güncel: " + current))
+			return nil
+		}
+		fmt.Println(styleDim.Render(fmt.Sprintf("  ⓘ son sürüm: %s  (mevcut: %s)", latest, current)))
+	}
 
 	// Pre-flight: kurulum dizinine yazabiliyor muyuz?
 	if !canWriteDir(installDir) {
@@ -83,6 +95,27 @@ func selfUpdate() error {
 		fmt.Printf("\n  %s", string(v))
 	}
 	return nil
+}
+
+// fetchLatestVersion — GitHub Releases API'sinden son tag adını çeker.
+func fetchLatestVersion() (string, error) {
+	req, _ := http.NewRequest("GET", "https://api.github.com/repos/muslu/cem/releases/latest", nil)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+	var r struct {
+		TagName string `json:"tag_name"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return "", err
+	}
+	return r.TagName, nil
 }
 
 // canWriteDir — geçici dosya açıp silerek dizinin yazılabilirliğini test eder.
