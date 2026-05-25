@@ -19,6 +19,9 @@ type Roles struct {
 type InstalledTool struct {
 	Command string `yaml:"command"`
 	Version string `yaml:"version,omitempty"`
+	// Model — CLI'a aktif çağrıda --model olarak verilecek model adı.
+	// Boş ise CLI kendi default'unu kullanır.
+	Model string `yaml:"model,omitempty"`
 }
 
 // APIKey — bir provider için saklanan tek bir API key. Label opsiyonel (insan
@@ -98,6 +101,12 @@ type ToolMeta struct {
 	// APIKeyEnv — provider'ın aktif key'i hangi env değişkeniyle alacağı.
 	// Boş ise key inject edilmez (CLI kendi auth'unu kullanır).
 	APIKeyEnv string
+	// ModelFlag — model seçimi için CLI bayrağı (örn. "--model").
+	// Boş ise model seçimi devre dışı.
+	ModelFlag string
+	// Models — wizard model seçicide gösterilecek öneriler. Kullanıcı bunlardan
+	// birini seçebilir veya "custom" ile manuel string girebilir.
+	Models []string
 }
 
 // KnownTools — desteklenen AI CLI araçları. Description kullanıcıya gösterilir.
@@ -109,7 +118,9 @@ var KnownTools = map[string]ToolMeta{
 		InstallShellUnix: "curl -fsSL https://claude.ai/install.sh | bash",
 		InstallShellWin:  "irm https://claude.ai/install.ps1 | iex",
 		VersionFlag:      "--version",
-		RunFlags:         []string{"-p"}, // print mode (non-interactive)
+		RunFlags:         []string{"-p"},                 // print mode (non-interactive)
+		ModelFlag:        "--model",
+		Models:           []string{"opus", "sonnet", "haiku"}, // alias + son sürümler
 	},
 	"agy": {
 		Name:             "Antigravity",
@@ -119,6 +130,8 @@ var KnownTools = map[string]ToolMeta{
 		VersionFlag:      "--version",
 		RunFlags:         []string{"-p"},
 		PromptAsArg:      true, // agy -p "prompt" (— -p bir argüman bekliyor)
+		ModelFlag:        "--model",
+		Models:           []string{"gemini-3-pro", "gemini-3-flash"},
 	},
 	"gpt": {
 		Name:        "Codex",
@@ -130,6 +143,8 @@ var KnownTools = map[string]ToolMeta{
 		PromptAsArg: true,                                       // codex exec "prompt"
 		Provider:    "openai",
 		APIKeyEnv:   "OPENAI_API_KEY",
+		ModelFlag:   "--model",
+		Models:      []string{"gpt-5.5", "gpt-5-mini", "gpt-5"},
 	},
 	"cursor": {
 		Name:             "Cursor",
@@ -140,6 +155,8 @@ var KnownTools = map[string]ToolMeta{
 		VersionFlag:      "--version",
 		RunFlags:         []string{"-p"},
 		PromptAsArg:      true,
+		ModelFlag:        "--model",
+		Models:           []string{"claude-4.6", "gpt-5.2", "gemini-3-pro"},
 	},
 }
 

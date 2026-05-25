@@ -284,6 +284,11 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 
 	meta := KnownTools[toolKey]
 	args := append([]string{}, meta.RunFlags...)
+	if meta.ModelFlag != "" {
+		if t, ok := rc.Global.Tools[toolKey]; ok && t.Model != "" {
+			args = append(args, meta.ModelFlag, t.Model)
+		}
+	}
 	if meta.PromptAsArg {
 		args = append(args, input)
 	}
@@ -324,6 +329,11 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 
 	meta := KnownTools[toolKey]
 	args := append([]string{}, meta.RunFlags...)
+	if meta.ModelFlag != "" {
+		if t, ok := rc.Global.Tools[toolKey]; ok && t.Model != "" {
+			args = append(args, meta.ModelFlag, t.Model)
+		}
+	}
 	if meta.PromptAsArg {
 		args = append(args, input)
 	}

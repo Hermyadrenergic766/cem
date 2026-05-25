@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -82,6 +83,15 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 		}
 	}
 
+	// Model seçimi — her rol için ayrı, varsayılan: CLI default'u (boş kalır)
+	if !autoYes {
+		fmt.Println()
+		askModel(thinker, "🧠 thinker", cfg)
+		if writer != thinker {
+			askModel(writer, "✍️  writer", cfg)
+		}
+	}
+
 	cfg.Roles = Roles{Thinker: thinker, Writer: writer}
 	cfg.Setup = true
 
@@ -119,6 +129,54 @@ func printTail(s string, n int) {
 	}
 	for _, l := range lines {
 		fmt.Println(styleDim.Render("  " + l))
+	}
+}
+
+// askModel — kullanıcıya bir tool için model seçtirir; seçimi cfg.Tools[key].Model'a
+// kaydeder. Tool için ModelFlag tanımlı değilse sessizce döner.
+func askModel(toolKey, label string, cfg *GlobalConfig) {
+	meta, ok := KnownTools[toolKey]
+	if !ok || meta.ModelFlag == "" || len(meta.Models) == 0 {
+		return
+	}
+	fmt.Printf("  %s · %s için model:\n", styleBold.Render(label), styleBold.Render(meta.Name))
+	for i, m := range meta.Models {
+		marker := " "
+		if t, ok := cfg.Tools[toolKey]; ok && t.Model == m {
+			marker = styleSuccess.Render("✓")
+		}
+		fmt.Printf("    %s [%d] %s\n", marker, i+1, m)
+	}
+	fmt.Printf("      [%d] custom (kendi adını gir)\n", len(meta.Models)+1)
+	fmt.Printf("      [0] default (CLI kendi seçer)\n")
+	fmt.Print("  Seçim: ")
+	reader := bufio.NewReader(os.Stdin)
+	resp, _ := reader.ReadString('\n')
+	resp = strings.TrimSpace(resp)
+
+	t := cfg.Tools[toolKey] // zero-value ok
+	switch resp {
+	case "", "0":
+		t.Model = "" // default
+	default:
+		idx, err := strconv.Atoi(resp)
+		if err != nil || idx < 1 || idx > len(meta.Models)+1 {
+			fmt.Println(styleDim.Render("  geçersiz, default kullanılacak"))
+			t.Model = ""
+		} else if idx == len(meta.Models)+1 {
+			fmt.Print("  Model adı: ")
+			line, _ := reader.ReadString('\n')
+			t.Model = strings.TrimSpace(line)
+		} else {
+			t.Model = meta.Models[idx-1]
+		}
+	}
+	if cfg.Tools == nil {
+		cfg.Tools = map[string]InstalledTool{}
+	}
+	cfg.Tools[toolKey] = t
+	if t.Model != "" {
+		fmt.Printf("  %s model: %s\n", styleSuccess.Render("✓"), styleBold.Render(t.Model))
 	}
 }
 

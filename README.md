@@ -56,7 +56,7 @@ cem -w "write fibonacci.py"        # writer only
 cem -p "write fibonacci.py"        # pair: thinker → writer
 ```
 
-The first run opens a setup wizard. Change roles later with:
+The first run opens a setup wizard that asks **which AI is the thinker, which is the writer, and which model each one uses** (Claude opus/sonnet/haiku, Codex gpt-5.5/5-mini, Antigravity gemini-3-pro/flash, Cursor claude-4.6/gpt-5.2 — or a custom string). The model is saved to `~/.cem/config.yaml` under `tools.<key>.model` and appended to every call as `--model <model>`. Change roles later with:
 
 ```sh
 cem roles claude agy               # global: thinker=claude, writer=agy
@@ -179,11 +179,13 @@ tools:
   claude:
     command: claude
     version: 2.1.143
+    model: opus              # passed as `claude --model opus`; empty → CLI default
   agy:
     # When a native installer doesn't refresh PATH for the current process,
     # cem records the absolute path it discovered post-install:
     command: C:\Users\Muslu\AppData\Local\agy\bin\agy.exe
     version: 1.2.0
+    model: gemini-3-pro
 
 api_keys:
   anthropic:
