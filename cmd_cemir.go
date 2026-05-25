@@ -33,6 +33,11 @@ var cemirRootCmd = &cobra.Command{
 
 		target := strings.ToLower(args[0])
 
+		if target == "all" {
+			removeAll(cfg)
+			return
+		}
+
 		if err := RemoveTool(target, cfg); err != nil {
 			fmt.Println(styleError.Render("✗ " + err.Error()))
 			os.Exit(1)
@@ -41,6 +46,44 @@ var cemirRootCmd = &cobra.Command{
 }
 
 func initCemirCmd() {}
+
+// removeAll — kurulu tüm araçları onay sorarak sırayla kaldırır
+func removeAll(cfg *GlobalConfig) {
+	if len(cfg.Tools) == 0 {
+		fmt.Println(styleDim.Render("  Kurulu araç yok."))
+		return
+	}
+
+	fmt.Println(styleBold.Render("  Tüm kurulu araçlar kaldırılacak:"))
+	for key := range cfg.Tools {
+		fmt.Printf("  · %s\n", styleBold.Render(key))
+	}
+	fmt.Println()
+	if !askYN("  Devam edilsin mi?") {
+		fmt.Println(styleDim.Render("  İptal."))
+		return
+	}
+
+	order := []string{"claude", "agy", "aider", "gemini", "gpt"}
+	failed := []string{}
+	for _, key := range order {
+		if _, ok := cfg.Tools[key]; !ok {
+			continue
+		}
+		if err := RemoveTool(key, cfg); err != nil {
+			fmt.Println(styleWarn.Render("  ⚠ " + err.Error()))
+			failed = append(failed, key)
+		}
+	}
+
+	fmt.Println()
+	if len(failed) > 0 {
+		fmt.Printf("  %s %d araç kaldırılamadı: %s\n",
+			styleWarn.Render("⚠"), len(failed), strings.Join(failed, ", "))
+	} else {
+		fmt.Println(styleSuccess.Render("  ✓ Tüm araçlar kaldırıldı."))
+	}
+}
 
 func printInstalledTools(cfg *GlobalConfig) {
 	if len(cfg.Tools) == 0 {
