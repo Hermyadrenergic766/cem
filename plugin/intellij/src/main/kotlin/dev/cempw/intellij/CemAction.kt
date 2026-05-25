@@ -9,6 +9,7 @@ import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
+import com.intellij.openapi.wm.ToolWindowManager
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -53,23 +54,26 @@ sealed class CemAction(private val mode: Mode) : AnAction() {
                 return
             }
 
-        val window = CemToolWindowFactory.show(project)
-        window.appendHeader(mode.name.lowercase(), text.take(80))
+        // Her invocation YENİ tab açar; eski sekmeler kalır, kullanıcı
+        // istediğinde kapatır (X tuşu).
+        val toolWindow = ToolWindowManager.getInstance(project).getToolWindow("cem")
+            ?: error("cem tool window not registered")
+        val tab = CemTab.newRun(toolWindow, mode.name.lowercase(), text.take(80))
 
         // Run cem in a background thread to avoid blocking EDT
         ApplicationManager.getApplication().executeOnPooledThread {
             try {
-                runCem(project, mode, text, window)
+                runCem(project, mode, text, tab)
             } catch (e: Exception) {
                 LOG.warn("cem invocation failed", e)
                 ApplicationManager.getApplication().invokeLater {
-                    window.appendError("Failed to invoke cem: ${e.message}")
+                    tab.appendError("Failed to invoke cem: ${e.message}")
                 }
             }
         }
     }
 
-    private fun runCem(project: Project, mode: Mode, prompt: String, window: CemToolWindow) {
+    private fun runCem(project: Project, mode: Mode, prompt: String, tab: CemTab) {
         val cemPath = CemSettings.instance.cemPath.ifBlank { "cem" }
         val workDir = project.basePath
 
@@ -85,16 +89,16 @@ sealed class CemAction(private val mode: Mode) : AnAction() {
         BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
             reader.lineSequence().forEach { line ->
                 ApplicationManager.getApplication().invokeLater {
-                    window.appendLine(line)
+                    tab.appendLine(line)
                 }
             }
         }
         val exitCode = process.waitFor()
         ApplicationManager.getApplication().invokeLater {
             if (exitCode != 0) {
-                window.appendError("cem exited with code $exitCode")
+                tab.appendError("cem exited with code $exitCode")
             } else {
-                window.appendDim("─── done ───")
+                tab.appendDim("─── done ───")
             }
         }
     }
