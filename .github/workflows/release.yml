@@ -56,6 +56,7 @@ jobs:
   build-intellij-plugin:
     name: IntelliJ plugin
     runs-on: ubuntu-latest
+    continue-on-error: true   # don't block binary release if plugin build fails
     steps:
       - uses: actions/checkout@v4
 
@@ -92,7 +93,8 @@ jobs:
           path: plugin/intellij/build/distributions/*.zip
 
   release:
-    needs: [build, build-intellij-plugin]
+    needs: build              # plugin is best-effort; binaries always ship
+    if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
