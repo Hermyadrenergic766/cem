@@ -42,10 +42,12 @@
 - [x] Git init + gitlab.makdos.biz/makdos/cem origin
 - [x] doc:CLAUDE update — proje-spesifik kılavuz yazıldı (2026-05-25)
 
-## 8. Açık (sonraya bırakıldı)
+## 8. Tamamlanan (devam oturumu)
+- [x] `~/.cem/history.log` (komut geçmişi) + `cem history` (-n / --clear)
+- [x] `cem -p` spinner — TTY-aware, bubbletea olmadan, sessiz pipe modu
+- [x] nginx `/r/` proxy → GitLab Releases permalink (önceki: GitHub placeholder)
+- [x] `.gitlab-ci.yml` release stage: 21 binary asset link + SHA256SUMS
+
+## 9. Açık (kullanıcı kararı bekliyor)
 - [ ] `.claude/agents/` ve `.claude/skills/` — `autoinstalltrixie` kalıntısı.
       Sil/değiştir kararı bekleniyor. `.claude/` artık gitignore'lı.
-- [ ] `~/.cem/history.log` (komut geçmişi)
-- [ ] `cem -p` için spinner (bubbletea entegrasyonu)
-- [ ] `install.sh` ve `install.ps1`'da `cem.pw/r/` proxy henüz sunucuda yok;
-      ilk release sonrası nginx site config'inde yol mapping eklenecek

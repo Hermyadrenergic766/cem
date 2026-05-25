@@ -40,15 +40,21 @@ production standartları (HTTP/3, Server header, fail2ban) — `cem.pw` sunucusu
 
 ```
 cem/
-├── main.go             — Binary adına göre dispatch
+├── main.go             — Binary adına göre dispatch + LDFLAGS version
 ├── config.go           — GlobalConfig + ProjectConfig + ResolvedConfig + KnownTools
+├── config_test.go      — ActiveRoles override + KnownTools sanity (5 test)
 ├── executor.go         — ModeThink/Write/Pair + Run + ReadStdin
+├── spinner.go          — TTY-aware tek satır spinner (pair modu için)
+├── history.go          — AppendHistory → ~/.cem/history.log (TSV)
 ├── wizard.go           — RunSetupWizard, InstallTool, RemoveTool, ShowRoles, askYN
 ├── banner.go           — ASCII art + lipgloss styles + ShowConfigSource
 ├── cmd_cem.go          — Cobra: rootCmd, rolesCmd, setupCmd, initCmd, statusCmd
-├── cmd_cemi.go         — cemi: tool kurulumu
-├── cmd_cemir.go        — cemir: tool kaldırma
+├── cmd_doctor.go       — cem doctor: tanı raporu (sistem/roller/araçlar/PATH)
+├── cmd_history.go      — cem history: -n N, --clear
+├── cmd_cemi.go         — cemi: tool kurulumu (claude/agy/aider/gemini/gpt + all + update)
+├── cmd_cemir.go        — cemir: tool kaldırma (tek araç + all)
 ├── cmd_uninstall.go    — cem uninstall: kendini sil
+├── .gitlab-ci.yml      — Canonical CI: test + 7 platform × 3 binary release
 ├── install.sh / .ps1   — cem.pw/install üzerinden kurulum
 ├── uninstall.sh / .ps1 — cem.pw/uninstall üzerinden kaldırma
 ├── Makefile            — build / dev / install / clean / tidy / test
@@ -131,12 +137,10 @@ make clean && make build
 ## Bilinen Eksikler
 
 `todo.md` güncel listeyi tutar. Açık başlıklar:
-- `*_test.go` yok — birim testi yazılmamış.
-- `cem doctor` komutu yok.
-- `~/.cem/history.log` yok.
-- Pair modunda spinner yok.
-- `cemir all` (toplu kaldırma) yok.
-- GitLab CI çevrimi yapılmamış.
+- `.claude/agents/` ve `.claude/skills/` `autoinstalltrixie` kalıntısı —
+  silme/değiştirme kararı bekliyor (`.claude/` gitignore'lı).
+- Daha kapsamlı testler: `executor_test.go`, `history_test.go` yok.
+- macOS/Linux/Windows entegrasyon testleri yok.
 
 ---
 
