@@ -519,11 +519,30 @@ func RemoveTool(toolKey string, cfg *GlobalConfig) error {
 	} else if len(ic) >= 2 && ic[0] == "pip" {
 		unCmd = exec.Command("pip", "uninstall", "-y", ic[len(ic)-1])
 	} else if pickInstallShell(meta) != "" {
-		// Shell-installed tool: silinecek binary'yi config'den veya fallback'ten al.
+		// Shell-installed tool: silinecek binary'yi bulma sırası:
+		// 1) config'deki mutlak yol
+		// 2) config'deki düz isim (eski install) → PATH'da resolve
+		// 3) meta.Binary'yi PATH'da ara
+		// 4) toolKey'i PATH'da ara
+		// 5) fallbackInstallPath
 		path := ""
-		if t, ok := cfg.Tools[toolKey]; ok && t.Command != "" && filepath.IsAbs(t.Command) {
-			path = t.Command
-		} else {
+		if t, ok := cfg.Tools[toolKey]; ok && t.Command != "" {
+			if filepath.IsAbs(t.Command) {
+				path = t.Command
+			} else if abs, err := exec.LookPath(t.Command); err == nil {
+				path = abs
+			}
+		}
+		if path == "" {
+			lookupName := toolKey
+			if meta.Binary != "" {
+				lookupName = meta.Binary
+			}
+			if abs, err := exec.LookPath(lookupName); err == nil {
+				path = abs
+			}
+		}
+		if path == "" {
 			path = fallbackInstallPath(toolKey)
 		}
 		if path == "" {

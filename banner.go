@@ -68,9 +68,10 @@ func PrintBanner(kind BannerKind) {
 }
 
 // OpenSourceNotice — tüm cem/cemi/cemir başlangıçlarında basılır; kullanıcı
-// kaynağın açık olduğunu görür.
+// kaynağın açık olduğunu ve hangi sürümü kullandığını görür.
 func OpenSourceNotice() {
-	fmt.Println(colorMuted.Render("  ⓘ Open source · https://github.com/muslu/cem"))
+	fmt.Println(colorMuted.Render(
+		"  ⓘ Open source · https://github.com/muslu/cem  ·  " + version))
 }
 
 // ShowConfigSource — hangi config kullanıldığını göster
