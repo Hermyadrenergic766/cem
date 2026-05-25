@@ -1,4 +1,4 @@
-# ⚡ CEM — Compose · Execute · Multiplex · [cem.pw](https://cem.pw)
+# ⚡ CEM — Compose · Execute · Multiplex
 
 ```
    ██████╗███████╗███╗   ███╗
@@ -9,156 +9,147 @@
    ╚═════╝╚══════╝╚═╝      ╚═╝
 ```
 
-**One command, many AIs.** Make Claude think, let Antigravity write — or any
-combination you prefer. Switch per project with a single YAML file.
+> **One command, many AIs.**
+> CEM — birden fazla AI CLI aracını (Claude · Antigravity · Codex · Cursor) tek bir komutla yöneten Go orchestrator. Bir AI **düşünür**, bir AI **yazar**; `pair` modunda düşünenin analizi yazana beslenir.
 
-> Türkçe README: [README.tr.md](README.tr.md)
+- Domain: [cem.pw](https://cem.pw)
+- Source: <https://github.com/muslu/cem>
+- Türkçe: [README.tr.md](README.tr.md)
 
 ---
 
 ## Install
 
+**macOS / Linux:**
 ```sh
-# macOS & Linux
 curl -fsSL cem.pw/install | sh
-
-# Windows (PowerShell)
-irm cem.pw/install.ps1 | iex
 ```
 
-A setup wizard launches the first time you run `cem`.
+**Windows (PowerShell):**
+```powershell
+irm cem.pw/install | iex
+```
+
+Installer OS/arch tespit eder, 3 binary (`cem`, `cemi`, `cemir`) indirir, Unix'te `/usr/local/bin`'e (veya yazılamazsa `~/.local/bin`'e), Windows'ta `%LOCALAPPDATA%\cem\bin`'e koyar.
+
+### Update / Uninstall
+
+```sh
+cem update      # cem.pw'den son sürümü çeker (GitHub API ile mevcut/yeni karşılaştırır)
+cem uninstall   # 3 binary + config klasörü
+```
 
 ---
 
-## Use
+## Quick Start
 
 ```sh
-cem "question"          # thinker AI — the default; you don't write "think"
-cem -w "task"           # writer AI
-cem -p "task"           # pair: think → write (writer receives thinker's analysis)
-cem -f file.py          # send file contents to thinker
-cem -wf file.py         # send file contents to writer
-cat code.py | cem -p    # pipe into pair mode
-
-cem roles               # show active roles
-cem roles claude agy    # change roles globally
-cem roles --here c agy  # change for this project only (.cem.yaml)
-cem init                # create .cem.yaml interactively
-cem status              # active configuration
-cem doctor              # diagnostic report (system + roles + tools + PATH)
-cem history             # last 20 commands
-cem history -n 100      # last 100
-cem setup               # rerun the install wizard
-cem uninstall           # remove cem/cemi/cemir from your system
+cem "fibonacci nedir?"            # thinker (düşünen AI tek başına)
+cem -w "fibonacci.py yaz"         # writer (yazan AI tek başına)
+cem -p "fibonacci.py yaz"         # pair: thinker → writer
 ```
 
-### Installer (`cemi`)
-
+İlk çalıştırma wizard'ı açar; rolleri sonradan değiştir:
 ```sh
-cemi                    # list known tools (installed vs missing)
-cemi claude             # install Claude Code
-cemi agy                # install Antigravity
-cemi all                # install everything (with per-tool confirmation)
-cemi update             # update everything
-cemi update agy         # update only Antigravity
+cem roles claude agy              # global: thinker=claude, writer=agy
+cem roles --here claude codex     # sadece bu dizin için (.cem.yaml)
+cem init                          # proje-spesifik wizard
 ```
 
-### Remover (`cemir`)
-
-```sh
-cemir                   # list installed tools
-cemir claude            # remove Claude Code
-cemir all               # remove every installed tool (with confirmation)
-```
+`pair` modu akıllı: **thinker == writer** ise writer atlanır; ne soruda ne thinker çıktısında kod istemi yoksa writer atlanır (boşa LLM çağrısı yok).
 
 ---
 
 ## Supported AI CLIs
 
-| Key | Tool | Notes |
-|---|---|---|
-| `claude` | Anthropic Claude Code | npm |
-| `agy` | **Antigravity** (Google) | Formerly Gemini CLI — autonomous coding agent |
-| `aider` | Aider | Open-source pair-programming AI (pip) |
-| `gemini` | Google Gemini CLI | ⚠ Personal use ends **2026-06-16** — prefer `agy` |
-| `gpt` | OpenAI Codex CLI | Renamed from the `gpt` CLI (npm) |
-| `goose` | Block Goose | Open-source autonomous agent (pip) |
-| `cody` | Sourcegraph Cody | npm |
-| `continue` | Continue.dev | Autopilot for VSCode/JetBrains (npm) |
-| `openhands` | OpenHands | Formerly OpenDevin — autonomous SWE agent (pip) |
-| `cursor` | Cursor | Cursor terminal agent (npm) |
+| Anahtar | Araç | Kurulum kaynağı | Non-interactive |
+|---|---|---|---|
+| `claude` | **Claude Code** (Anthropic) | [native installer](https://code.claude.com/docs/en/quickstart) — auto-update | `claude -p` (stdin) |
+| `agy` | **Antigravity** (Google) | [native installer](https://antigravity.google/docs/cli-getting-started) | `agy -p` (stdin) |
+| `gpt` | **Codex** (OpenAI) | `npm i -g @openai/codex` | `codex exec "prompt"` |
+| `cursor` | **Cursor agent** | `npm i -g cursor-agent` | — |
+
+```sh
+cemi                              # mevcut & yüklenebilir
+cemi claude                       # tek araç (önkoşulları algılar: npm/Node)
+cemi all                          # 4'ünü birden
+cemir agy                         # tek araç kaldır (shell-install da silinir)
+cemir all                         # hepsini kaldır
+```
+
+`cemi <tool>` çağrısı **npm/Node** gerektiriyor ama bulunamıyorsa (veya çok eski — npm 3 gibi) → otomatik olarak `winget` / `brew` / NodeSource `apt-get` ile Node LTS kurar (kullanıcı onayıyla).
 
 ---
 
-## Configuration
+## Pair Mode
 
-- `~/.cem/config.yaml` — global config (default roles + installed tools)
-- `.cem.yaml` — project override; lives at the repo root
+```sh
+cem -p "binary search'ü TypeScript'te yaz"
+```
 
-Project values take precedence; any field left out falls back to the global
-config. Example `.cem.yaml`:
+1. 🧠 **Thinker** (örn. `claude`) sorunu çözer — algoritma, edge cases, tip seçimi
+2. ✍️ **Writer** (örn. `agy`) thinker'ın analizini + asıl soruyu input alır, kodu yazar
+
+Skip kuralları:
+
+| Durum | Davranış |
+|---|---|
+| `thinker == writer` (ikisi de `claude`) | Writer atlanır (duplikasyon engeli) |
+| Soru kod istemiyor ve thinker çıktısında \`\`\` yok | Writer atlanır |
+| Diğer | Writer thinker analizini bağlam alarak çalışır |
+
+---
+
+## Diagnostics
+
+```sh
+cem doctor                        # sistem + roller + araçlar + PATH raporu
+cem status                        # özet
+cem roles                         # aktif roller
+cem history                       # son komutlar (TSV)
+cem history -n 50                 # son 50
+cem history --clear
+```
+
+`~/.cem/history.log` — tab-separated log.
+
+---
+
+## Config
+
+`~/.cem/config.yaml` (global) ve proje kökünde `.cem.yaml` (override):
 
 ```yaml
 roles:
-  thinker: gemini
-  writer:  aider
-```
+  thinker: claude
+  writer:  agy
 
-Run `cem roles` to see which config is active and where it comes from.
+tools:
+  claude:
+    command: claude
+    version: 2.1.143
+  agy:
+    # Native installer PATH'i güncellemezse, post-install yakaladığımız mutlak yol:
+    command: C:\Users\Muslu\AppData\Local\agy\bin\agy.exe
+    version: 1.2.0
+```
 
 ---
 
-## How `cem -p` works
-
-```
-       you type ──► thinker AI ──► analysis ──► writer AI ──► final code
-       (input)      (claude)       (text)        (agy)
-```
-
-The thinker's full output is appended to the writer's prompt as
-`--- Thinker analysis ---`, giving the writer reasoning context before it
-produces code.
-
----
-
-## History
-
-Every `cem` invocation appends a line to `~/.cem/history.log`:
-
-```
-2026-05-25T13:42:11Z    pair    claude+agy    0    refactor middleware to async …
-```
-
-Inspect with `cem history -n 50` or wipe with `cem history --clear`.
-
----
-
-## Build from source
+## Build From Source
 
 ```sh
 git clone https://github.com/muslu/cem.git
 cd cem
-make build            # builds ./build/{cem,cemi,cemir}
-make dev              # installs to ~/.local/bin
-make install          # installs to /usr/local/bin (sudo)
-make test             # go test ./...
+make build                        # 3 binary → build/
+make install                      # /usr/local/bin (sudo)
+go test ./...
 ```
 
-Version is injected from `git describe --tags --always --dirty`:
-
-```sh
-./build/cem --version
-# cem version v1.0.0
-```
+Sürüm `git describe --tags --always --dirty` çıktısından LDFLAGS ile enjekte edilir.
 
 ---
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
-## Links
-
-- Site: [cem.pw](https://cem.pw)
-- Source: [github.com/muslu/cem](https://github.com/muslu/cem)
-- Issues: [github.com/muslu/cem/issues](https://github.com/muslu/cem/issues)
