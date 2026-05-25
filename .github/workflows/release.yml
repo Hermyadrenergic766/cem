@@ -185,7 +185,10 @@ jobs:
           path: plugin/mcp/dist/*
 
   release:
-    needs: build              # plugin is best-effort; binaries always ship
+    # Tüm build job'larını bekle — plugin'ler continue-on-error olduğundan
+    # başarısız olsalar bile bu job çalışır (if: always). 'build' başarılı
+    # olduğu sürece release publish edilir; plugin artifact'leri varsa eklenir.
+    needs: [build, build-intellij-plugin, build-vscode-extension, build-mcp-server]
     if: ${{ always() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
