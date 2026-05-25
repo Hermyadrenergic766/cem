@@ -28,17 +28,17 @@ func checkUpdateNotice() {
 		go refreshUpdateCheck()
 	}
 
-	if cache.LatestVersion != "" && cache.LatestVersion != version && version != "dev" {
+	if cache.LatestVersion != "" && version != "dev" && semverLess(version, cache.LatestVersion) {
 		printUpdateNotice(cache.LatestVersion)
 	}
 }
 
 func printUpdateNotice(latest string) {
 	// Sarı/turuncu vurgu — dikkat çeksin, çıktıyı boğmasın
-	fmt.Printf("  %s %s → %s · run %s\n",
-		styleWarn.Render("🔔 yeni sürüm:"),
-		styleDim.Render(version),
+	fmt.Printf("  %s %s available (current: %s) · run %s\n",
+		styleWarn.Render("🔔 new version"),
 		styleBold.Render(latest),
+		styleDim.Render(version),
 		styleBold.Render("cem update"))
 }
 

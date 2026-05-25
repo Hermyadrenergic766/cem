@@ -101,6 +101,13 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 
 	fmt.Println()
 	fmt.Println(styleSuccess.Render("  ✓ Hazır!"))
+	// Proje config'i global'i override ediyorsa kullanıcıyı uyar — wizard
+	// ayarları o dizinde uygulanmaz.
+	if _, err := os.Stat(".cem.yaml"); err == nil {
+		fmt.Println(styleWarn.Render(
+			"  ⚠ Bu dizinde .cem.yaml var — burada çalışırken global override edilir."))
+		fmt.Println(styleDim.Render("    Proje config'ini değiştirmek için: cem init"))
+	}
 	fmt.Println()
 	fmt.Printf("  🧠 %s  →  %s\n",
 		styleBold.Render(thinker),

@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -46,8 +47,14 @@ func selfUpdate() error {
 	latest, err := fetchLatestVersion()
 	if err == nil && latest != "" {
 		current := version // main paketindeki LDFLAGS değişkeni
-		if current == latest {
-			fmt.Println(styleSuccess.Render("  ✓ zaten güncel: " + current))
+		if !semverLess(current, latest) {
+			// current >= latest → indirme gereksiz (devel build veya gecikmiş tag)
+			fmt.Println(styleSuccess.Render(fmt.Sprintf(
+				"  ✓ zaten güncel: %s  (uzaktaki son: %s)", current, latest)))
+			// Cache'i de güncelle ki update notice tetiklenmesin
+			saveUpdateCheckCache(updateCheckCache{
+				LastCheck: time.Now(), LatestVersion: latest,
+			})
 			return nil
 		}
 		fmt.Println(styleDim.Render(fmt.Sprintf("  ⓘ son sürüm: %s  (mevcut: %s)", latest, current)))
