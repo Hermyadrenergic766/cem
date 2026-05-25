@@ -29,12 +29,11 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        // 2024.3 = IntelliJ Platform 243.x, PyCharm 2024.3, GoLand 2024.3 vb.
-        intellijIdeaCommunity("2024.3")
+        // 2023.2 = IntelliJ Platform 232.x — sinceBuild ile aynı baseline.
+        // Daha eski IDE'lerle uyumlu compile etmek için bu sürümle derliyoruz.
+        intellijIdeaCommunity("2023.2")
         bundledPlugin("com.intellij.platform.images")
         testFramework(TestFrameworkType.Platform)
-        // NOT: Plugin v2.4+ instrumentationTools() metodunu kaldırdı; instrumentCode
-        // task'i artık otomatik olarak compatibility runtime'ı çekiyor.
     }
     testImplementation("junit:junit:4.13.2")
 }
@@ -42,7 +41,9 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            sinceBuild = "243"
+            // PyCharm 2023.2+ (Ekim 2023). Daha geriye gitmek için kullandığımız
+            // API'lerin uyumlu olduğundan emin olmak gerek.
+            sinceBuild = "232"
             untilBuild = provider { null }
         }
         changeNotes = providers.gradleProperty("pluginVersion").map { v ->
