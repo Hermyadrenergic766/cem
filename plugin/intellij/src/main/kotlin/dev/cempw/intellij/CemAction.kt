@@ -1,5 +1,9 @@
 package dev.cempw.intellij
 
+import com.intellij.ide.BrowserUtil
+import com.intellij.notification.NotificationAction
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
@@ -7,10 +11,12 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Editor
 import com.intellij.openapi.fileEditor.FileEditorManager
+import com.intellij.openapi.ide.CopyPasteManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.openapi.wm.ToolWindowManager
+import java.awt.datatransfer.StringSelection
 import java.io.InputStreamReader
 
 /**
@@ -57,6 +63,45 @@ sealed class CemAction(val mode: Mode) : AnAction() {
                 project, message, "cem", default, Messages.getQuestionIcon(), null,
             )
             return resp?.takeIf { it.isNotBlank() }
+        }
+
+        /** Çıktıdan URL'leri yakala — özellikle OAuth login linklerini. */
+        private val urlRegex = Regex("""https?://[^\s<>"']+""")
+        fun extractUrls(text: String): List<String> =
+            urlRegex.findAll(text).map { it.value }
+                // GitHub repo veya cem.pw gibi info linklerini filtrele;
+                // sadece auth/OAuth gibi action URL'leri öne çıkarmak için
+                // 'accounts.', '/oauth', '/auth' içerenleri öncelikli al.
+                .toList()
+                .sortedByDescending { url ->
+                    val u = url.lowercase()
+                    when {
+                        "accounts." in u -> 3
+                        "oauth"     in u -> 3
+                        "/auth"     in u -> 2
+                        "claude.ai" in u && "auth" in u -> 2
+                        else -> 0
+                    }
+                }
+                .filter { url ->
+                    // Bilgi linklerini ele
+                    val u = url.lowercase()
+                    "github.com/muslu/cem" !in u && "cem.pw" !in u
+                }
+
+        /** OAuth URL'i bulunca IDE balloon notification göster + tarayıcı/kopyala butonu. */
+        fun notifyAuthUrl(project: Project, url: String) {
+            val group = NotificationGroupManager.getInstance()
+                .getNotificationGroup("cem.auth") ?: return
+            group.createNotification(
+                "cem: authentication needed",
+                "Tarayıcıda aç veya kodu kopyalayıp 'cem auth <tool> --code ...' kullan.",
+                NotificationType.WARNING,
+            ).addAction(NotificationAction.createSimple("Open in Browser") {
+                BrowserUtil.browse(url)
+            }).addAction(NotificationAction.createSimple("Copy URL") {
+                CopyPasteManager.getInstance().setContents(StringSelection(url))
+            }).notify(project)
         }
 
         /**
@@ -163,13 +208,22 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             // Char-by-char oku — line buffering ile bekleme yok.
             val reader = InputStreamReader(process.inputStream, Charsets.UTF_8)
             val buf = CharArray(2048)
+            val fullOutput = StringBuilder()
             while (!tab.cancelled) {
                 val n = reader.read(buf)
                 if (n < 0) break
                 val chunk = String(buf, 0, n)
+                fullOutput.append(chunk)
                 ApplicationManager.getApplication().invokeLater { tab.appendRaw(chunk) }
             }
             val exit = process.waitFor()
+            // OAuth/login URL'lerini yakala, kullanıcıya notification göster:
+            // PSReadline'da uzun URL kopyalamak/yapıştırmak zor olabiliyor.
+            extractUrls(fullOutput.toString()).firstOrNull()?.let { url ->
+                ApplicationManager.getApplication().invokeLater {
+                    notifyAuthUrl(project, url)
+                }
+            }
             val totalSecs = (System.currentTimeMillis() - startTime) / 1000
             // Tab kapatıldıysa final mesajı yazmıyoruz — content zaten gitti
             if (tab.cancelled) return
