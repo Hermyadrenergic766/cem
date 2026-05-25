@@ -98,6 +98,15 @@ func selfUpdate() error {
 		fmt.Println(styleSuccess.Render(fmt.Sprintf("  ✓ %s güncellendi → %s", name, dst)))
 	}
 
+	// Update başarılı: cache'i yenile ki bir sonraki çağrıda eskimiş bildirim
+	// gösterilmesin.
+	if latest != "" {
+		saveUpdateCheckCache(updateCheckCache{
+			LastCheck:     time.Now(),
+			LatestVersion: latest,
+		})
+	}
+
 	if v, err := exec.Command(myPath, "--version").Output(); err == nil {
 		fmt.Printf("\n  %s", string(v))
 	}

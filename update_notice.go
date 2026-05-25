@@ -20,6 +20,11 @@ const updateCheckInterval = 1 * time.Hour
 // Cache TTL doluysa arka planda GitHub API'sini sorgulayıp dosyayı günceller;
 // mevcut cache yeni sürüm gösteriyorsa renkli bildirim basar.
 func checkUpdateNotice() {
+	// 'cem update' zaten son sürümü gösterecek; stale cache'in eski numarasını
+	// basıp kullanıcıyı şaşırtma.
+	if len(os.Args) > 1 && os.Args[1] == "update" {
+		return
+	}
 	cache := loadUpdateCheckCache()
 	stale := time.Since(cache.LastCheck) > updateCheckInterval
 
