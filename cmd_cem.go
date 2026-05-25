@@ -65,7 +65,26 @@ var rootCmd = &cobra.Command{
 			mode = ModeWrite
 		}
 
-		if err := Run(input, mode, rc); err != nil {
+		runErr := Run(input, mode, rc)
+
+		// History (rol: pair → thinker+writer, write → writer, think → thinker)
+		roles := rc.ActiveRoles()
+		var role string
+		switch mode {
+		case ModeWrite:
+			role = roles.Writer
+		case ModePair:
+			role = roles.Thinker + "+" + roles.Writer
+		default:
+			role = roles.Thinker
+		}
+		exit := 0
+		if runErr != nil {
+			exit = 1
+		}
+		AppendHistory(mode, role, input, exit)
+
+		if runErr != nil {
 			os.Exit(1)
 		}
 	},
