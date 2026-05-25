@@ -15,7 +15,7 @@ import (
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Son sürümü cem.pw üzerinden indir ve kur",
+	Short: "Download and install the latest release via cem.pw",
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := selfUpdate(); err != nil {
 			fmt.Println(styleError.Render("✗ " + err.Error()))

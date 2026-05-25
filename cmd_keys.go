@@ -12,12 +12,12 @@ import (
 
 var keysCmd = &cobra.Command{
 	Use:   "keys",
-	Short: "API key'leri yönet (anthropic, openai) — rate limit'te otomatik rotasyon",
+	Short: "Manage API keys (anthropic, openai) — auto-rotate on rate limits",
 }
 
 var keysAddCmd = &cobra.Command{
 	Use:   "add <provider>",
-	Short: "Bir provider için yeni API key ekle (interaktif)",
+	Short: "Add a new API key for a provider (interactive)",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		provider := normalizeProvider(args[0])
@@ -57,7 +57,7 @@ var keysAddCmd = &cobra.Command{
 
 var keysListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Saklı key'leri listele (mask'lenmiş)",
+	Short: "List stored keys (masked)",
 	Run: func(cmd *cobra.Command, args []string) {
 		cfg, err := loadGlobalConfig()
 		if err != nil {
@@ -88,7 +88,7 @@ var keysListCmd = &cobra.Command{
 
 var keysRemoveCmd = &cobra.Command{
 	Use:   "remove <provider> <index>",
-	Short: "Belirli bir key'i sil (index list'teki sırası)",
+	Short: "Remove a specific key (index from list)",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		provider := normalizeProvider(args[0])

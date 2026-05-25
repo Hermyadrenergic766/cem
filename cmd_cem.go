@@ -15,10 +15,11 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:     "cem [input]",
-	Short:   "⚡ Compose · Execute · Multiplex — one command, many AIs",
-	Version: version,
-	Args:    cobra.ArbitraryArgs,
+	Use:               "cem [input]",
+	Short:             "⚡ Compose · Execute · Multiplex — one command, many AIs",
+	Version:           version,
+	Args:              cobra.ArbitraryArgs,
+	PersistentPreRun:  func(cmd *cobra.Command, args []string) { OpenSourceNotice() },
 	// Banner her çalıştırmada değil sadece help'te görünsün
 	// Kullanım sırasında kısa prefix yeterli
 	Run: func(cmd *cobra.Command, args []string) {
@@ -96,11 +97,11 @@ var rolesCmdHere bool
 
 var rolesCmd = &cobra.Command{
 	Use:   "roles [thinker] [writer]",
-	Short: "Rolleri göster veya değiştir",
-	Long: `  cem roles                    → mevcut rolleri göster
-  cem roles claude agy         → global değiştir
-  cem roles gemini             → sadece thinker
-  cem roles --here claude agy  → sadece bu proje için`,
+	Short: "Show or change roles (thinker / writer)",
+	Long: `  cem roles                    → show current roles
+  cem roles claude agy         → set global
+  cem roles claude             → only thinker
+  cem roles --here claude agy  → project-only (.cem.yaml)`,
 	Args: cobra.RangeArgs(0, 2),
 	Run: func(cmd *cobra.Command, args []string) {
 		rc, err := LoadConfig()
@@ -150,7 +151,7 @@ var rolesCmd = &cobra.Command{
 
 var setupCmd = &cobra.Command{
 	Use:   "setup",
-	Short: "Kurulum sihirbazını yeniden çalıştır",
+	Short: "Re-run the setup wizard",
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintBanner(BannerCem)
 		cfg, err := loadGlobalConfig()
@@ -169,8 +170,8 @@ var setupCmd = &cobra.Command{
 
 var initCmd = &cobra.Command{
 	Use:   "init [thinker] [writer]",
-	Short: "Bu proje için .cem.yaml oluştur",
-	Long: `  cem init                 → interaktif wizard
+	Short: "Create .cem.yaml for this project",
+	Long: `  cem init                 → interactive wizard
   cem init claude agy      → direkt oluştur`,
 	Args: cobra.RangeArgs(0, 2),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -222,7 +223,7 @@ var initCmd = &cobra.Command{
 
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Kurulum durumunu göster",
+	Short: "Show installation status",
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintBanner(BannerCem)
 		rc, err := LoadConfig()

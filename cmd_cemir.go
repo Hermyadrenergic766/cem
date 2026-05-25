@@ -12,10 +12,11 @@ import (
 // cemir          → kurulu araçları listele
 
 var cemirRootCmd = &cobra.Command{
-	Use:     "cemir [tool]",
-	Short:   "Uninstall AI CLI tools",
-	Version: version,
-	Args:    cobra.ArbitraryArgs,
+	Use:              "cemir [tool]",
+	Short:            "Uninstall AI CLI tools",
+	Version:          version,
+	Args:             cobra.ArbitraryArgs,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) { OpenSourceNotice() },
 	Run: func(cmd *cobra.Command, args []string) {
 		if yes, _ := cmd.Flags().GetBool("yes"); yes {
 			autoYes = true
@@ -49,7 +50,7 @@ var cemirRootCmd = &cobra.Command{
 }
 
 func initCemirCmd() {
-	cemirRootCmd.Flags().BoolP("yes", "y", false, "tüm onayları otomatik kabul et")
+	cemirRootCmd.Flags().BoolP("yes", "y", false, "auto-accept all prompts")
 }
 
 // removeAll — kurulu tüm araçları onay sorarak sırayla kaldırır

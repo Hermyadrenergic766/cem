@@ -13,9 +13,9 @@ import (
 
 var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
-	Short: "CEM'i sistemden kaldır",
-	Long: `  cem uninstall   → cem, cemi, cemir binary'lerini sil
-                    config klasörünü silmek ister misin diye sorar`,
+	Short: "Remove CEM from the system",
+	Long: `  cem uninstall   → delete cem, cemi, cemir binaries
+                    asks whether to delete the config directory`,
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintBanner(BannerCem)
 		runUninstall()

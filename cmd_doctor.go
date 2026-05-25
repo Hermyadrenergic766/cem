@@ -17,8 +17,8 @@ func init() {
 
 var doctorCmd = &cobra.Command{
 	Use:   "doctor",
-	Short: "Kurulum sağlığını kontrol et",
-	Long: `  cem doctor   → Kurulu araçlar, PATH, config, binary konumları
+	Short: "Diagnose installation health",
+	Long: `  cem doctor   → installed tools, PATH, config, binary locations
                   ve roller tutarlılığı için tanı raporu.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		PrintBanner(BannerCem)

@@ -15,10 +15,11 @@ import (
 // cemi update agy → sadece agy güncelle
 
 var cemiRootCmd = &cobra.Command{
-	Use:     "cemi [tool]",
-	Short:   "Install AI CLI tools",
-	Version: version,
-	Args:    cobra.ArbitraryArgs,
+	Use:              "cemi [tool]",
+	Short:            "Install AI CLI tools",
+	Version:          version,
+	Args:             cobra.ArbitraryArgs,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) { OpenSourceNotice() },
 	Run: func(cmd *cobra.Command, args []string) {
 		if yes, _ := cmd.Flags().GetBool("yes"); yes {
 			autoYes = true
@@ -75,7 +76,7 @@ var cemiRootCmd = &cobra.Command{
 }
 
 func initCemiCmd() {
-	cemiRootCmd.Flags().BoolP("yes", "y", false, "tüm onayları otomatik kabul et")
+	cemiRootCmd.Flags().BoolP("yes", "y", false, "auto-accept all prompts")
 }
 
 // ─── Yardımcı fonksiyonlar ────────────────────────────────────────────────────

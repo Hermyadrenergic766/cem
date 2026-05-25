@@ -67,12 +67,18 @@ func PrintBanner(kind BannerKind) {
 	fmt.Println()
 }
 
+// OpenSourceNotice — tüm cem/cemi/cemir başlangıçlarında basılır; kullanıcı
+// kaynağın açık olduğunu görür.
+func OpenSourceNotice() {
+	fmt.Println(colorMuted.Render("  ⓘ Open source · https://github.com/muslu/cem"))
+}
+
 // ShowConfigSource — hangi config kullanıldığını göster
 func ShowConfigSource(rc *ResolvedConfig) {
 	if rc.HasProjectConfig() {
-		fmt.Println(colorYellow.Render("  📁 Proje config: ") +
+		fmt.Println(colorYellow.Render("  📁 Project config: ") +
 			colorTagline.Render(".cem.yaml") +
-			colorMuted.Render("  (global override)"))
+			colorMuted.Render("  (overrides global)"))
 	} else {
 		fmt.Println(colorMuted.Render("  🌍 Global config: ~/.cem/config.yaml"))
 	}
