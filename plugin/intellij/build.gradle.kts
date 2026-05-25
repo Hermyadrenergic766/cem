@@ -33,9 +33,8 @@ dependencies {
         intellijIdeaCommunity("2024.3")
         bundledPlugin("com.intellij.platform.images")
         testFramework(TestFrameworkType.Platform)
-        // instrumentCode task'i için: form (.form) ve diğer kaynakların bytecode
-        // post-processing'ini yapacak Java derleyicisi.
-        instrumentationTools()
+        // NOT: Plugin v2.4+ instrumentationTools() metodunu kaldırdı; instrumentCode
+        // task'i artık otomatik olarak compatibility runtime'ı çekiyor.
     }
     testImplementation("junit:junit:4.13.2")
 }
