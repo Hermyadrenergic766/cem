@@ -6,11 +6,16 @@ import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBScrollPane
+import com.intellij.ui.components.JBTextField
 import com.intellij.ui.content.Content
 import com.intellij.ui.content.ContentFactory
 import java.awt.BorderLayout
+import java.awt.event.ActionEvent
+import javax.swing.AbstractAction
+import javax.swing.JLabel
 import javax.swing.JPanel
 import javax.swing.JTextPane
+import javax.swing.KeyStroke
 import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
 
@@ -20,16 +25,15 @@ import javax.swing.text.StyleConstants
  */
 class CemToolWindowFactory : ToolWindowFactory {
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
-        // Tab'leri kapatılabilir yapan global ayar — bazı IntelliJ sürümlerinde
-        // varsayılan false, X butonu görünmüyor.
-        toolWindow.contentManager.canCloseContents()
-        // Welcome tab (closable; user can dismiss permanently)
-        val welcome = CemTab.welcome()
+        // İlk açılış: terminal benzeri etkileşimli sekme. Alttaki input'a yazıp
+        // Enter'a basınca cem (think mode) çalışır, çıktı üstte birikir.
+        val interactive = CemTab.interactive(project, toolWindow)
         val content = ContentFactory.getInstance()
-            .createContent(welcome.component, "Welcome", true)
-        content.isCloseable = true
-        content.isPinned = false
+            .createContent(interactive.component, "Interactive", false)
+        content.isCloseable = false   // kapanmaz — kullanıcı her seferinde input'a yazar
+        content.isPinned = true
         toolWindow.contentManager.addContent(content)
+        toolWindow.contentManager.setSelectedContent(content)
     }
 }
 
@@ -104,31 +108,102 @@ class CemTab {
     }
 
     companion object {
-        /** Welcome tab: ilk açılışta kısayolları gösteren bilgi sekmesi. */
+        /** Welcome tab (legacy — şimdi interactive ile değiştirildi). */
         fun welcome(): CemTab {
             val tab = CemTab()
-            tab.appendStyled(
-                """
-                ⚡ cem — Compose · Execute · Multiplex
-                One command, many AIs.
-
-                Send code from the editor to your configured AIs:
-                  Ctrl+Alt+I   →  cem: think on selection   (thinker AI)
-                  Ctrl+Alt+W   →  cem: write on selection   (writer AI)
-                  Ctrl+Alt+P   →  cem: pair on selection    (thinker → writer)
-
-                Tip: with no selection, the whole active file is sent.
-
-                Configure thinker/writer/model:  Settings → Tools → cem
-                Repo:  https://github.com/muslu/cem
-
-                Each invocation opens a new tab in this tool window.
-
-                """.trimIndent(),
-                bold = false,
-                color = JBColor.GRAY,
-            )
+            tab.appendStyled(welcomeText(), bold = false, color = JBColor.GRAY)
             return tab
+        }
+
+        private fun welcomeText(): String = """
+            ⚡ cem — Compose · Execute · Multiplex
+            One command, many AIs.
+
+            Aşağıdaki input'a sorunu yaz, Enter'a bas → cem "..." (thinker)
+
+            Editör shortcut'ları:
+              Ctrl+Alt+I  →  cem: think on selection
+              Ctrl+Alt+W  →  cem: write on selection
+              Ctrl+Alt+P  →  cem: pair on selection (thinker → writer)
+              Ctrl+Alt+A  →  cem: ask freely (custom prompt)
+
+            Tip: editör seçimi olmadan kısayol → input dialog açılır.
+            Settings → Tools → cem ile thinker/writer/model değiştirilir.
+
+            ─── geçmiş ───
+
+        """.trimIndent()
+
+        /**
+         * Etkileşimli "Interactive" tab — REPL benzeri:
+         *  ┌──────────────────────────────┐
+         *  │ Welcome + history (scroll)   │
+         *  │                              │
+         *  │                              │
+         *  ├──────────────────────────────┤
+         *  │ cem "...": [user types]   ⏎ │
+         *  └──────────────────────────────┘
+         * Enter → cem "<prompt>" (think mode) → çıktı history'ye eklenir.
+         */
+        fun interactive(project: Project, toolWindow: ToolWindow): CemTab {
+            val tab = CemTab()
+            tab.appendStyled(welcomeText(), bold = false, color = JBColor.GRAY)
+
+            val input = JBTextField()
+            input.toolTipText = "Sorunu yaz, Enter'a bas → cem \"...\" çalışır"
+            val south = JPanel(BorderLayout()).apply {
+                add(JLabel(" cem \"...\" › "), BorderLayout.WEST)
+                add(input, BorderLayout.CENTER)
+            }
+            tab.component.add(south, BorderLayout.SOUTH)
+
+            // Enter → submit
+            input.actionMap.put("submit", object : AbstractAction() {
+                override fun actionPerformed(e: ActionEvent) {
+                    val prompt = input.text.trim()
+                    if (prompt.isEmpty()) return
+                    input.text = ""
+                    tab.appendStyled("\n> $prompt\n", bold = true, color = JBColor.foreground())
+                    // Aynı tab'a stream et — yeni tab açma. CemAction.launchCem
+                    // yeni tab açar; biz inline çalıştıracağız.
+                    launchInline(project, prompt, tab)
+                }
+            })
+            input.inputMap.put(KeyStroke.getKeyStroke("ENTER"), "submit")
+            return tab
+        }
+
+        /**
+         * Interactive tab için — yeni tab AÇMADAN, mevcut tab'a stream et.
+         */
+        private fun launchInline(project: Project, prompt: String, tab: CemTab) {
+            com.intellij.openapi.application.ApplicationManager.getApplication()
+                .executeOnPooledThread {
+                try {
+                    val cemPath = CemAction.resolveCemBinary()
+                    val pb = ProcessBuilder(cemPath, prompt).redirectErrorStream(true)
+                    project.basePath?.let { pb.directory(java.io.File(it)) }
+                    val process = pb.start()
+                    tab.process = process
+                    val reader = java.io.InputStreamReader(process.inputStream, Charsets.UTF_8)
+                    val buf = CharArray(2048)
+                    while (!tab.cancelled) {
+                        val n = reader.read(buf)
+                        if (n < 0) break
+                        val chunk = String(buf, 0, n)
+                        com.intellij.openapi.application.ApplicationManager.getApplication()
+                            .invokeLater { tab.appendRaw(chunk) }
+                    }
+                    val exit = process.waitFor()
+                    com.intellij.openapi.application.ApplicationManager.getApplication()
+                        .invokeLater {
+                            tab.appendDim(if (exit == 0) "─── done ───\n" else "─── exit $exit ───\n")
+                        }
+                } catch (e: Exception) {
+                    com.intellij.openapi.application.ApplicationManager.getApplication()
+                        .invokeLater { tab.appendError("cem hata: ${e.message}\n") }
+                }
+            }
         }
 
         /**
