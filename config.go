@@ -74,31 +74,38 @@ type ToolMeta struct {
 	// RunFlags — cem aracı çalıştırırken eklenen flag'ler. Boşsa stdin'le çağrılır;
 	// "-p" gibi tek-atış flag'i, AI CLI'larının interaktif REPL'e geçmesini önler.
 	RunFlags []string
+	// PromptAsArg true ise input, RunFlags'ten sonra son pozisyonel arg olarak verilir;
+	// false ise (varsayılan) stdin üzerinden pipe edilir. Codex 'exec "prompt"'
+	// gibi pozisyonel pattern bekleyen araçlar için gerekli.
+	PromptAsArg bool
 }
 
 // KnownTools — desteklenen AI CLI araçları. Description kullanıcıya gösterilir.
 // Deprecated alanı doluysa setup/cemi listelerinde uyarı görüntülenir.
 var KnownTools = map[string]ToolMeta{
 	"claude": {
-		Name:        "Claude",
-		Description: "Anthropic Claude Code (anthropic.com)",
-		InstallCmd:  []string{"npm", "install", "-g", "@anthropic-ai/claude-code"},
-		VersionFlag: "--version",
-		RunFlags:    []string{"-p"}, // print mode: bir cevap üret, REPL'e girme
+		Name:             "Claude",
+		Description:      "Anthropic Claude Code (code.claude.com) — native installer, auto-update",
+		InstallShellUnix: "curl -fsSL https://claude.ai/install.sh | bash",
+		InstallShellWin:  "irm https://claude.ai/install.ps1 | iex",
+		VersionFlag:      "--version",
+		RunFlags:         []string{"-p"}, // print mode (non-interactive)
 	},
 	"agy": {
 		Name:             "Antigravity",
-		Description:      "Google Antigravity CLI (Gemini CLI'ın halefi, antigravity.google)",
+		Description:      "Google Antigravity CLI — Gemini CLI'ın halefi (antigravity.google)",
 		InstallShellUnix: "curl -fsSL https://antigravity.google/cli/install.sh | bash",
-		InstallShellWin:  "iwr https://antigravity.google/cli/install.ps1 -UseB | iex",
+		InstallShellWin:  "irm https://antigravity.google/cli/install.ps1 | iex",
 		VersionFlag:      "--version",
 		RunFlags:         []string{"-p"},
 	},
 	"gpt": {
 		Name:        "Codex",
-		Description: "OpenAI Codex CLI (formerly gpt CLI)",
+		Description: "OpenAI Codex CLI (developers.openai.com/codex)",
 		InstallCmd:  []string{"npm", "install", "-g", "@openai/codex"},
 		VersionFlag: "--version",
+		RunFlags:    []string{"exec"}, // non-interactive subcommand
+		PromptAsArg: true,              // codex exec "prompt"
 	},
 	"cursor": {
 		Name:        "Cursor",

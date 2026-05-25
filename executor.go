@@ -140,6 +140,20 @@ func fallbackInstallPath(toolKey string) string {
 		} else {
 			candidates = append(candidates, filepath.Join(home, ".local", "bin", "agy"))
 		}
+	case "claude":
+		// Native installer (claude.ai/install.sh) önce ~/.claude/local/bin/'e koyup
+		// shell rc'lerine PATH ekler. Mevcut süreçte hâlâ yoksa direkt yolu deneyelim.
+		if runtime.GOOS == "windows" {
+			if lap := os.Getenv("LOCALAPPDATA"); lap != "" {
+				candidates = append(candidates, filepath.Join(lap, "Claude", "claude.exe"))
+			}
+			candidates = append(candidates, filepath.Join(home, ".claude", "local", "claude.exe"))
+		} else {
+			candidates = append(candidates,
+				filepath.Join(home, ".claude", "local", "claude"),
+				filepath.Join(home, ".local", "bin", "claude"),
+			)
+		}
 	case "cursor":
 		if runtime.GOOS == "windows" {
 			if lad := os.Getenv("LOCALAPPDATA"); lad != "" {
@@ -166,8 +180,14 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 	}
 
 	meta := KnownTools[toolKey]
-	cmd := exec.Command(bin, meta.RunFlags...)
-	cmd.Stdin = strings.NewReader(input)
+	args := append([]string{}, meta.RunFlags...)
+	if meta.PromptAsArg {
+		args = append(args, input)
+	}
+	cmd := exec.Command(bin, args...)
+	if !meta.PromptAsArg {
+		cmd.Stdin = strings.NewReader(input)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -188,8 +208,14 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 	}
 
 	meta := KnownTools[toolKey]
-	cmd := exec.Command(bin, meta.RunFlags...)
-	cmd.Stdin = strings.NewReader(input)
+	args := append([]string{}, meta.RunFlags...)
+	if meta.PromptAsArg {
+		args = append(args, input)
+	}
+	cmd := exec.Command(bin, args...)
+	if !meta.PromptAsArg {
+		cmd.Stdin = strings.NewReader(input)
+	}
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
