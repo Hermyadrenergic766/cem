@@ -29,9 +29,8 @@ repositories {
 
 dependencies {
     intellijPlatform {
-        // 2023.2 = IntelliJ Platform 232.x — sinceBuild ile aynı baseline.
-        // Daha eski IDE'lerle uyumlu compile etmek için bu sürümle derliyoruz.
-        intellijIdeaCommunity("2023.2")
+        // 2023.3 = IntelliJ Platform 233.x — sinceBuild ile aynı baseline.
+        intellijIdeaCommunity("2023.3")
         bundledPlugin("com.intellij.platform.images")
         testFramework(TestFrameworkType.Platform)
     }
@@ -41,9 +40,9 @@ dependencies {
 intellijPlatform {
     pluginConfiguration {
         ideaVersion {
-            // PyCharm 2023.2+ (Ekim 2023). Daha geriye gitmek için kullandığımız
-            // API'lerin uyumlu olduğundan emin olmak gerek.
-            sinceBuild = "232"
+            // PyCharm/IDEA/GoLand 2023.3+ (Kasım 2023). IntelliJ Platform Gradle
+            // Plugin 2.16.0 minimum 233 destekliyor — 232 'too low' diye reddediyor.
+            sinceBuild = "233"
             untilBuild = provider { null }
         }
         changeNotes = providers.gradleProperty("pluginVersion").map { v ->

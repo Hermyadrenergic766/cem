@@ -189,6 +189,21 @@ Sürüm `git describe --tags --always --dirty` çıktısından LDFLAGS ile enjek
 
 ---
 
+## IDE entegrasyonları
+
+cem'i terminal yerine editör içinden çağır:
+
+| Editör | Kurulum | Kısayollar |
+|---|---|---|
+| **PyCharm / IntelliJ IDEA / GoLand / WebStorm / vb.** | `cem-intellij-<sürüm>.zip` indir → [Releases](https://github.com/muslu/cem/releases/latest) → Settings → Plugins → ⚙ → Install Plugin from Disk | `Ctrl+Alt+I/W/P` |
+| **VS Code** | `cem-vscode-<sürüm>.vsix` indir → `code --install-extension cem-vscode-<sürüm>.vsix` | `Ctrl+Alt+I/W/P` |
+| **Claude Desktop / Cursor / Continue** (MCP) | `cem-mcp-<os>-<arch>` indir → host'unun MCP config'ine ekle | — (chat'ten tool call) |
+| **Antigravity IDE** | Şimdilik dahili terminal; MCP desteği yol haritasında | — |
+
+Adım adım kurulum için: [docs/IDE.tr.md](docs/IDE.tr.md), Antigravity için: [docs/ANTIGRAVITY.md](docs/ANTIGRAVITY.md).
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

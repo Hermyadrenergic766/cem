@@ -92,7 +92,22 @@ cemir all          # remove the installed AI tools
 
 cem checks for new versions in the background and shows a one-line notice if there's an update — never blocks you.
 
-> **Version format:** As of 2026-05-25 cem uses calendar versioning `YYYYMMDD.MINOR` (example: `20260525.01`). Older `v0.1.x` semver tags keep working — `cem update` knows both formats.
+> **Version format:** cem uses calendar versioning `YYYYMMDD.MINOR` since 2026-05-25 (example: `20260525.05`). Older `v0.1.x` semver tags keep working — `cem update` understands both formats and only suggests an update when the remote tag is genuinely newer.
+
+---
+
+## IDE integrations
+
+Run cem from inside your editor instead of the terminal:
+
+| Editor | How to install | Shortcuts |
+|---|---|---|
+| **PyCharm / IntelliJ IDEA / GoLand / WebStorm / etc.** | Download `cem-intellij-<version>.zip` from [Releases](https://github.com/muslu/cem/releases/latest) → Settings → Plugins → ⚙ → Install Plugin from Disk | `Ctrl+Alt+I/W/P` |
+| **VS Code** | Download `cem-vscode-<version>.vsix` → `code --install-extension cem-vscode-<version>.vsix` | `Ctrl+Alt+I/W/P` |
+| **Claude Desktop / Cursor / Continue** (MCP) | Download `cem-mcp-<os>-<arch>` → register in your host's MCP config | — (tool calls from chat) |
+| **Antigravity IDE** | Use the built-in terminal for now; MCP support is on the roadmap | — |
+
+See [docs/IDE.md](docs/IDE.md) for screen-by-screen setup and [docs/ANTIGRAVITY.md](docs/ANTIGRAVITY.md) for Antigravity-specific notes.
 
 ---
 
