@@ -163,7 +163,7 @@ class CemTab {
             tab.appendStyled(welcomeText(), bold = false, color = JBColor.GRAY)
 
             val input = JBTextField()
-            input.toolTipText = "Sorunu veya görevi yaz, Enter'a bas"
+            input.toolTipText = "Sorunu yaz, Enter ↵   ·   ↑/↓ önceki/sonraki prompt"
 
             val inputPanel = JPanel(BorderLayout()).apply {
                 add(JLabel(" cem ›  "), BorderLayout.WEST)
@@ -177,18 +177,51 @@ class CemTab {
             }
             tab.component.add(southWrap, BorderLayout.SOUTH)
 
+            // Shell-style prompt history. Bash gibi: Enter → ekle; ↑/↓ gez.
+            // historyIndex = history.size → "henüz tarihçeye dönmedi", input düzenleniyor.
+            val history = mutableListOf<String>()
+            var historyIndex = 0
+            var draft = ""
+
             input.actionMap.put("submit", object : AbstractAction() {
                 override fun actionPerformed(e: ActionEvent) {
                     val prompt = input.text.trim()
                     if (prompt.isEmpty()) return
                     input.text = ""
-                    // Interactive tab'da yer kaplamasın diye her soru için
-                    // YENİ tab açıyoruz — kendi spinner'ı + history'si olur.
+                    // Duplikatları arka arkaya eklemeyiz (bash HIST_IGNORE_DUPS).
+                    if (history.isEmpty() || history.last() != prompt) history.add(prompt)
+                    historyIndex = history.size
+                    draft = ""
                     tab.appendDim("→ yeni tab: $prompt")
                     CemAction.launchCem(project, CemAction.Mode.PAIR, prompt)
                 }
             })
             input.inputMap.put(KeyStroke.getKeyStroke("ENTER"), "submit")
+
+            input.actionMap.put("history.prev", object : AbstractAction() {
+                override fun actionPerformed(e: ActionEvent) {
+                    if (history.isEmpty()) return
+                    // İlk ↑ basışında mevcut taslağı kaydet
+                    if (historyIndex == history.size) draft = input.text
+                    if (historyIndex > 0) {
+                        historyIndex--
+                        input.text = history[historyIndex]
+                        input.caretPosition = input.text.length
+                    }
+                }
+            })
+            input.inputMap.put(KeyStroke.getKeyStroke("UP"), "history.prev")
+
+            input.actionMap.put("history.next", object : AbstractAction() {
+                override fun actionPerformed(e: ActionEvent) {
+                    if (historyIndex >= history.size) return
+                    historyIndex++
+                    input.text = if (historyIndex == history.size) draft else history[historyIndex]
+                    input.caretPosition = input.text.length
+                }
+            })
+            input.inputMap.put(KeyStroke.getKeyStroke("DOWN"), "history.next")
+
             return tab
         }
 
