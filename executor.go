@@ -93,6 +93,30 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 	return fmt.Errorf("bilinmeyen mod")
 }
 
+// buildArgs — bir AI CLI çağrısının komut argümanlarını oluşturur. Sıra:
+//
+//	ModelBeforeRun=true  → [--model X, RunFlags..., input?]
+//	ModelBeforeRun=false → [RunFlags..., --model X, input?]
+//
+// agy/cursor -p "PROMPT" alır; --model -p ile prompt arasına girerse -p'nin
+// değeri "--model" oluyor. Bunu önlemek için ModelBeforeRun=true.
+func buildArgs(meta ToolMeta, toolKey string, rc *ResolvedConfig, input string) []string {
+	model := resolveModel(toolKey, rc)
+	includeModel := model != "" && meta.ModelFlag != ""
+	args := []string{}
+	if includeModel && meta.ModelBeforeRun {
+		args = append(args, meta.ModelFlag, model)
+	}
+	args = append(args, meta.RunFlags...)
+	if includeModel && !meta.ModelBeforeRun {
+		args = append(args, meta.ModelFlag, model)
+	}
+	if meta.PromptAsArg {
+		args = append(args, input)
+	}
+	return args
+}
+
 // resolveModel — toolKey için kullanılacak modeli döndürür. Sıra:
 // 1) Proje config'i (.cem.yaml > models > <key>)
 // 2) Global config (~/.cem/config.yaml > tools > <key> > model)
@@ -322,13 +346,7 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 	}
 
 	meta := KnownTools[toolKey]
-	args := append([]string{}, meta.RunFlags...)
-	if model := resolveModel(toolKey, rc); model != "" && meta.ModelFlag != "" {
-		args = append(args, meta.ModelFlag, model)
-	}
-	if meta.PromptAsArg {
-		args = append(args, input)
-	}
+	args := buildArgs(meta, toolKey, rc, input)
 
 	return withKeyRotation(meta, rc.Global, func(env []string) error {
 		cmd := exec.Command(bin, args...)
@@ -365,13 +383,7 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 	}
 
 	meta := KnownTools[toolKey]
-	args := append([]string{}, meta.RunFlags...)
-	if model := resolveModel(toolKey, rc); model != "" && meta.ModelFlag != "" {
-		args = append(args, meta.ModelFlag, model)
-	}
-	if meta.PromptAsArg {
-		args = append(args, input)
-	}
+	args := buildArgs(meta, toolKey, rc, input)
 	var out []byte
 	err := withKeyRotation(meta, rc.Global, func(env []string) error {
 		cmd := exec.Command(bin, args...)

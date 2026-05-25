@@ -108,6 +108,12 @@ type ToolMeta struct {
 	// ModelFlag — model seçimi için CLI bayrağı (örn. "--model").
 	// Boş ise model seçimi devre dışı.
 	ModelFlag string
+	// ModelBeforeRun true ise --model X, RunFlags'ten ÖNCE yerleştirilir.
+	// Gerekli olduğu durum: tool'un prompt-flag'i (örn. agy -p, cursor -p)
+	// argüman alır; --model -p ile prompt arasına girerse -p'nin değeri
+	// "--model" olur ve prompt yolda kaybolur. Codex 'exec' subcommand'ı
+	// olduğu için RunFlags sonuna konur (default false).
+	ModelBeforeRun bool
 	// Models — wizard model seçicide gösterilecek öneriler. Kullanıcı bunlardan
 	// birini seçebilir veya "custom" ile manuel string girebilir.
 	Models []string
@@ -139,6 +145,7 @@ var KnownTools = map[string]ToolMeta{
 		RunFlags:         []string{"-p"},
 		PromptAsArg:      true, // agy -p "prompt" (— -p bir argüman bekliyor)
 		ModelFlag:        "--model",
+		ModelBeforeRun:   true, // -p arg yutmasın diye --model önce
 		Models:           []string{"gemini-3-pro", "gemini-3-flash"},
 		AuthCmd:          []string{"login"},
 	},
@@ -166,6 +173,7 @@ var KnownTools = map[string]ToolMeta{
 		RunFlags:         []string{"-p"},
 		PromptAsArg:      true,
 		ModelFlag:        "--model",
+		ModelBeforeRun:   true, // cursor-agent -p arg yutmasın diye
 		Models:           []string{"claude-4.6", "gpt-5.2", "gemini-3-pro"},
 		AuthCmd:          []string{"login"},
 	},
