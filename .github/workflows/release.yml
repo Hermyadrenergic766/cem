@@ -70,8 +70,8 @@ jobs:
           java-version: '21'
 
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.10'   # IntelliJ Platform plugin v2 testing baseline; Gradle 9 hâlâ deprecation uyarıları veriyor
+        # Default Gradle (9.x). IntelliJ Platform Gradle Plugin 2.16+ Gradle 9.0+
+        # gerektiriyor. Deprecation uyarıları olabilir, build başarısız olmaz.
 
       - name: Sync pluginVersion to tag
         working-directory: plugin/intellij
