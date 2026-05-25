@@ -32,17 +32,20 @@
 - [x] `install.sh` + `install.ps1` → git URL `gitlab.makdos.biz/makdos/cem`,
       binary download `cem.pw/r`
 
-## 7. Açık (yapılmadı)
-- [ ] `.claude/agents/` ve `.claude/skills/` — bunlar `autoinstalltrixie`
-      projesinin kalıntısı (iso-builder, preseed-engineer, qemu-tester, build-iso,
-      test-iso vs). CEM ile ilgisi yok. **Karar bekleniyor:** silinsin mi yoksa
-      CEM-spesifik agents (örn. `tool-installer`, `role-switcher`) ile değiştirilsin
-      mi? `.claude/hooks/` zaten generic güvenlik hookları — kalabilir.
-- [ ] `*_test.go` — birim testi yazılmamış
-- [ ] `cem doctor` komutu (kurulu araç + PATH kontrolü)
+## 7. Yeni Tamamlananlar (2026-05-25 oturumu)
+- [x] `cem doctor` komutu (sistem + roller + araçlar PATH + binary'ler)
+- [x] `cemir all` toplu kaldırma (onaylı + hatalı özet)
+- [x] LDFLAGS versiyon enjeksiyonu (`-X main.version=$(git describe)`)
+- [x] `config_test.go` — 5 test (ActiveRoles override + KnownTools sanity)
+- [x] `.gitlab-ci.yml` — 7 platform binary + Release tag
+- [x] `.gitignore` CEM'e özel yeniden yazıldı
+- [x] Git init + gitlab.makdos.biz/makdos/cem origin
+- [x] doc:CLAUDE update — proje-spesifik kılavuz yazıldı (2026-05-25)
+
+## 8. Açık (sonraya bırakıldı)
+- [ ] `.claude/agents/` ve `.claude/skills/` — `autoinstalltrixie` kalıntısı.
+      Sil/değiştir kararı bekleniyor. `.claude/` artık gitignore'lı.
 - [ ] `~/.cem/history.log` (komut geçmişi)
 - [ ] `cem -p` için spinner (bubbletea entegrasyonu)
-- [ ] `cemir all` (toplu kaldırma)
-- [ ] GitLab CI çevrimi (release.yml → .gitlab-ci.yml)
-- [ ] LDFLAGS ile versiyon enjeksiyonu (`-X main.version=$(git describe)`)
-- [ ] doc:CLAUDE update — başlangıç sürümü yazıldı (2026-05-25)
+- [ ] `install.sh` ve `install.ps1`'da `cem.pw/r/` proxy henüz sunucuda yok;
+      ilk release sonrası nginx site config'inde yol mapping eklenecek
