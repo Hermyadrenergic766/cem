@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -309,6 +310,29 @@ func RemoveTool(toolKey string, cfg *GlobalConfig) error {
 		unCmd = exec.Command("npm", "uninstall", "-g", ic[len(ic)-1])
 	} else if len(ic) >= 2 && ic[0] == "pip" {
 		unCmd = exec.Command("pip", "uninstall", "-y", ic[len(ic)-1])
+	} else if pickInstallShell(meta) != "" {
+		// Shell-installed tool: silinecek binary'yi config'den veya fallback'ten al.
+		path := ""
+		if t, ok := cfg.Tools[toolKey]; ok && t.Command != "" && filepath.IsAbs(t.Command) {
+			path = t.Command
+		} else {
+			path = fallbackInstallPath(toolKey)
+		}
+		if path == "" {
+			return fmt.Errorf("binary konumu bulunamadı — manuel sil")
+		}
+		if err := os.Remove(path); err != nil {
+			return fmt.Errorf("%s silinemedi: %w", path, err)
+		}
+		fmt.Println(styleDim.Render("    silindi: " + path))
+		// Boş kalan ana klasörü temizle (örn. %LOCALAPPDATA%\agy\bin → \agy)
+		if dir := filepath.Dir(path); dir != "" {
+			_ = os.Remove(dir)             // bin/
+			_ = os.Remove(filepath.Dir(dir)) // agy/
+		}
+		delete(cfg.Tools, toolKey)
+		fmt.Printf("  %s %s kaldırıldı\n", styleSuccess.Render("✓"), meta.Name)
+		return saveGlobalConfig(cfg)
 	} else {
 		return fmt.Errorf("otomatik kaldırma desteklenmiyor")
 	}
