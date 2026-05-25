@@ -191,16 +191,20 @@ Sürüm `git describe --tags --always --dirty` çıktısından LDFLAGS ile enjek
 
 ## IDE entegrasyonları
 
-cem'i terminal yerine editör içinden çağır:
+cem'i terminal yerine editör içinden çağır. Her editör için ayrı kılavuz:
 
-| Editör | Kurulum | Kısayollar |
+| Editör | Hızlı kurulum | Kılavuz |
 |---|---|---|
-| **PyCharm / IntelliJ IDEA / GoLand / WebStorm / vb.** | `cem-intellij-<sürüm>.zip` indir → [Releases](https://github.com/muslu/cem/releases/latest) → Settings → Plugins → ⚙ → Install Plugin from Disk | `Ctrl+Alt+I/W/P` |
-| **VS Code** | `cem-vscode-<sürüm>.vsix` indir → `code --install-extension cem-vscode-<sürüm>.vsix` | `Ctrl+Alt+I/W/P` |
-| **Claude Desktop / Cursor / Continue** (MCP) | `cem-mcp-<os>-<arch>` indir → host'unun MCP config'ine ekle | — (chat'ten tool call) |
-| **Antigravity IDE** | Şimdilik dahili terminal; MCP desteği yol haritasında | — |
+| **PyCharm / IntelliJ IDEA / GoLand / WebStorm / RubyMine / PhpStorm / Rider / DataGrip / CLion / RustRover** | Plugin zip'i Install from Disk | [docs/INTELLIJ.tr.md](docs/INTELLIJ.tr.md) |
+| **VS Code** | `code --install-extension cem-vscode-<v>.vsix` | [docs/VSCODE.tr.md](docs/VSCODE.tr.md) |
+| **Cursor** | VS Code .vsix'i + opsiyonel MCP | [docs/CURSOR.md](docs/CURSOR.md) |
+| **Claude Desktop** | `cem-mcp` MCP sunucusu | [docs/CLAUDE-DESKTOP.tr.md](docs/CLAUDE-DESKTOP.tr.md) |
+| **Continue.dev** | `cem-mcp` MCP sunucusu | [docs/CONTINUE.md](docs/CONTINUE.md) |
+| **Antigravity IDE** | Dahili terminal (full plugin yol haritasında) | [docs/ANTIGRAVITY.md](docs/ANTIGRAVITY.md) |
+| **Vim / Neovim** | Plugin yok — shell function örnekleri | [docs/VIM.md](docs/VIM.md) |
+| **Emacs** | Plugin yok — elisp örnekleri | [docs/EMACS.md](docs/EMACS.md) |
 
-Adım adım kurulum için: [docs/IDE.tr.md](docs/IDE.tr.md), Antigravity için: [docs/ANTIGRAVITY.md](docs/ANTIGRAVITY.md).
+İndirme (plugin zip, vsix, mcp binary): [GitHub Releases](https://github.com/muslu/cem/releases/latest).
 
 ---
 

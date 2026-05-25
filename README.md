@@ -98,16 +98,20 @@ cem checks for new versions in the background and shows a one-line notice if the
 
 ## IDE integrations
 
-Run cem from inside your editor instead of the terminal:
+Run cem from inside your editor instead of the terminal. Each editor has a dedicated guide:
 
-| Editor | How to install | Shortcuts |
+| Editor | Quick install | Setup guide |
 |---|---|---|
-| **PyCharm / IntelliJ IDEA / GoLand / WebStorm / etc.** | Download `cem-intellij-<version>.zip` from [Releases](https://github.com/muslu/cem/releases/latest) → Settings → Plugins → ⚙ → Install Plugin from Disk | `Ctrl+Alt+I/W/P` |
-| **VS Code** | Download `cem-vscode-<version>.vsix` → `code --install-extension cem-vscode-<version>.vsix` | `Ctrl+Alt+I/W/P` |
-| **Claude Desktop / Cursor / Continue** (MCP) | Download `cem-mcp-<os>-<arch>` → register in your host's MCP config | — (tool calls from chat) |
-| **Antigravity IDE** | Use the built-in terminal for now; MCP support is on the roadmap | — |
+| **PyCharm / IntelliJ IDEA / GoLand / WebStorm / RubyMine / PhpStorm / Rider / DataGrip / CLion / RustRover** | Install plugin zip from disk | [docs/INTELLIJ.md](docs/INTELLIJ.md) |
+| **VS Code** | `code --install-extension cem-vscode-<v>.vsix` | [docs/VSCODE.md](docs/VSCODE.md) |
+| **Cursor** | Same vsix as VS Code, plus optional MCP | [docs/CURSOR.md](docs/CURSOR.md) |
+| **Claude Desktop** | `cem-mcp` MCP server | [docs/CLAUDE-DESKTOP.md](docs/CLAUDE-DESKTOP.md) |
+| **Continue.dev** | `cem-mcp` MCP server | [docs/CONTINUE.md](docs/CONTINUE.md) |
+| **Antigravity IDE** | Built-in terminal (full plugin pending) | [docs/ANTIGRAVITY.md](docs/ANTIGRAVITY.md) |
+| **Vim / Neovim** | No plugin — shell function recipes | [docs/VIM.md](docs/VIM.md) |
+| **Emacs** | No plugin — elisp recipes | [docs/EMACS.md](docs/EMACS.md) |
 
-See [docs/IDE.md](docs/IDE.md) for screen-by-screen setup and [docs/ANTIGRAVITY.md](docs/ANTIGRAVITY.md) for Antigravity-specific notes.
+Downloads (plugin zip, vsix, mcp binaries) live on [GitHub Releases](https://github.com/muslu/cem/releases/latest).
 
 ---
 
