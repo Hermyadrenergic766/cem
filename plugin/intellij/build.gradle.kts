@@ -7,7 +7,6 @@
 // Output:   build/distributions/cem-intellij-*.zip — installable via
 //           PyCharm → Settings → Plugins → ⚙ → Install Plugin from Disk.
 
-import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
