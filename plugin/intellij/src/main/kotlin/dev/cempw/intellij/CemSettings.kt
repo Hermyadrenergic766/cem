@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.options.Configurable
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
@@ -41,33 +42,112 @@ class CemSettings : PersistentStateComponent<CemSettings.State> {
 class CemSettingsConfigurable : Configurable {
     private var panel: JPanel? = null
     private var cemPathField: JBTextField? = null
+    private var thinkerCombo: ComboBox<String>? = null
+    private var writerCombo: ComboBox<String>? = null
+    private var thinkerModelCombo: ComboBox<String>? = null
+    private var writerModelCombo: ComboBox<String>? = null
+    private var initial: CemConfig.State = CemConfig.State()
 
     override fun getDisplayName() = "cem"
 
     override fun createComponent(): JComponent {
         cemPathField = JBTextField(CemSettings.instance.cemPath, 40)
+
+        initial = CemConfig.load()
+        thinkerCombo = ComboBox(CemConfig.knownTools.toTypedArray()).apply {
+            selectedItem = initial.thinker.ifBlank { "claude" }
+            addActionListener { refreshModelCombos() }
+        }
+        writerCombo = ComboBox(CemConfig.knownTools.toTypedArray()).apply {
+            selectedItem = initial.writer.ifBlank { "agy" }
+            addActionListener { refreshModelCombos() }
+        }
+        thinkerModelCombo = ComboBox<String>()
+        writerModelCombo = ComboBox<String>()
+        refreshModelCombos()
+
         val form = FormBuilder.createFormBuilder()
             .addLabeledComponent(JBLabel("cem binary path:"), cemPathField!!, 1, false)
             .addComponent(JBLabel("Leave as 'cem' if it's on PATH. Otherwise full path."))
+            .addSeparator()
+            .addComponent(JBLabel("Roles — cem setup ile aynı sorular:"))
+            .addLabeledComponent(JBLabel("🧠 Thinker:"), thinkerCombo!!, 1, false)
+            .addLabeledComponent(JBLabel("    Model:"), thinkerModelCombo!!, 1, false)
+            .addLabeledComponent(JBLabel("✍️  Writer:"), writerCombo!!, 1, false)
+            .addLabeledComponent(JBLabel("    Model:"), writerModelCombo!!, 1, false)
+            .addComponent(JBLabel("<html><i>Boş model = CLI default. Apply ile ~/.cem/config.yaml güncellenir.</i></html>"))
             .addComponentFillVertically(JPanel(), 0)
             .panel
         panel = form
         return form
     }
 
-    override fun isModified(): Boolean =
-        cemPathField?.text != CemSettings.instance.cemPath
+    private fun refreshModelCombos() {
+        val tk = thinkerCombo?.selectedItem as? String ?: return
+        val wk = writerCombo?.selectedItem as? String ?: return
+        thinkerModelCombo?.let { it.model = javax.swing.DefaultComboBoxModel(modelsFor(tk).toTypedArray()) }
+        writerModelCombo?.let { it.model = javax.swing.DefaultComboBoxModel(modelsFor(wk).toTypedArray()) }
+        thinkerModelCombo?.selectedItem = initial.models[tk].orEmpty().ifBlank { "" }
+        writerModelCombo?.selectedItem = initial.models[wk].orEmpty().ifBlank { "" }
+    }
+
+    /** "" (default) + tool'un bilinen modelleri. */
+    private fun modelsFor(tool: String): List<String> {
+        val list = mutableListOf("")
+        list += CemConfig.modelsByTool[tool] ?: emptyList()
+        return list
+    }
+
+    private fun currentUiState(): CemConfig.State {
+        val tk = thinkerCombo?.selectedItem as? String ?: ""
+        val wk = writerCombo?.selectedItem as? String ?: ""
+        val tm = thinkerModelCombo?.selectedItem as? String ?: ""
+        val wm = writerModelCombo?.selectedItem as? String ?: ""
+        // Mevcut models map'ini kopyala, sadece seçili tool'ların entry'lerini güncelle.
+        val models = initial.models.toMutableMap()
+        if (tk.isNotBlank()) models[tk] = tm
+        if (wk.isNotBlank()) models[wk] = wm
+        return CemConfig.State(tk, wk, models)
+    }
+
+    override fun isModified(): Boolean {
+        val pathChanged = cemPathField?.text != CemSettings.instance.cemPath
+        val cur = currentUiState()
+        val rolesChanged = cur.thinker != initial.thinker || cur.writer != initial.writer
+        val modelsChanged = cur.models != initial.models
+        return pathChanged || rolesChanged || modelsChanged
+    }
 
     override fun apply() {
         CemSettings.instance.cemPath = cemPathField?.text ?: "cem"
+        val cur = currentUiState()
+        if (cur.thinker.isNotBlank() && cur.writer.isNotBlank()) {
+            try {
+                CemConfig.save(cur)
+                initial = cur
+            } catch (e: Exception) {
+                com.intellij.openapi.ui.Messages.showErrorDialog(
+                    "~/.cem/config.yaml yazılamadı: ${e.message}",
+                    "cem",
+                )
+            }
+        }
     }
 
     override fun reset() {
         cemPathField?.text = CemSettings.instance.cemPath
+        initial = CemConfig.load()
+        thinkerCombo?.selectedItem = initial.thinker.ifBlank { "claude" }
+        writerCombo?.selectedItem  = initial.writer.ifBlank { "agy" }
+        refreshModelCombos()
     }
 
     override fun disposeUIResources() {
         panel = null
         cemPathField = null
+        thinkerCombo = null
+        writerCombo = null
+        thinkerModelCombo = null
+        writerModelCombo = null
     }
 }

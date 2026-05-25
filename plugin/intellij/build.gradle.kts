@@ -34,6 +34,8 @@ dependencies {
         bundledPlugin("com.intellij.platform.images")
         testFramework(TestFrameworkType.Platform)
     }
+    // ~/.cem/config.yaml okuma/yazma için
+    implementation("org.snakeyaml:snakeyaml-engine:2.7")
     testImplementation("junit:junit:4.13.2")
 }
 
