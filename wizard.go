@@ -101,12 +101,34 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 
 	fmt.Println()
 	fmt.Println(styleSuccess.Render("  ✓ Hazır!"))
-	// Proje config'i global'i override ediyorsa kullanıcıyı uyar — wizard
-	// ayarları o dizinde uygulanmaz.
+	// Proje config'i global'i override ediyor — kullanıcıya bu dizindeki
+	// .cem.yaml'i yeni rollere göre güncellemek isteyip istemediğini sor.
 	if _, err := os.Stat(".cem.yaml"); err == nil {
 		fmt.Println(styleWarn.Render(
 			"  ⚠ Bu dizinde .cem.yaml var — burada çalışırken global override edilir."))
-		fmt.Println(styleDim.Render("    Proje config'ini değiştirmek için: cem init"))
+		if askYN("  Proje config'ini de yeni rollerle güncelleyeyim mi?") {
+			pc := &ProjectConfig{Roles: &Roles{Thinker: thinker, Writer: writer}}
+			// Modelleri de aktar — global'de set edilmişse proje override eklenir
+			pc.Models = map[string]string{}
+			if t, ok := cfg.Tools[thinker]; ok && t.Model != "" {
+				pc.Models[thinker] = t.Model
+			}
+			if writer != thinker {
+				if w, ok := cfg.Tools[writer]; ok && w.Model != "" {
+					pc.Models[writer] = w.Model
+				}
+			}
+			if len(pc.Models) == 0 {
+				pc.Models = nil
+			}
+			if err := SaveProjectConfig(pc); err != nil {
+				fmt.Println(styleError.Render("  ✗ .cem.yaml yazılamadı: " + err.Error()))
+			} else {
+				fmt.Println(styleSuccess.Render("  ✓ .cem.yaml güncellendi"))
+			}
+		} else {
+			fmt.Println(styleDim.Render("    Sonra: cem init"))
+		}
 	}
 	fmt.Println()
 	fmt.Printf("  🧠 %s  →  %s\n",
