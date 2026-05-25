@@ -1,0 +1,75 @@
+<idea-plugin>
+    <id>dev.cempw.intellij</id>
+    <name>cem — multi-AI orchestrator</name>
+    <vendor email="hi@cem.pw" url="https://cem.pw">cem.pw</vendor>
+
+    <description><![CDATA[
+        <p>Run the <a href="https://github.com/muslu/cem">cem</a> CLI from inside PyCharm / IntelliJ IDEA / GoLand / WebStorm.</p>
+
+        <p><b>cem</b> is a single command that drives multiple AI CLIs
+        (Claude · Antigravity · Codex · Cursor). One AI thinks, another
+        writes; in <code>pair</code> mode the thinker's analysis is fed
+        to the writer.</p>
+
+        <p>This plugin adds three actions to the editor's context menu and
+        <b>Tools → cem</b>:</p>
+        <ul>
+            <li><b>cem: think on selection</b> (default <code>Ctrl+Alt+I</code>)</li>
+            <li><b>cem: write on selection</b> (default <code>Ctrl+Alt+W</code>)</li>
+            <li><b>cem: pair on selection</b> (default <code>Ctrl+Alt+P</code>)</li>
+        </ul>
+
+        <p>The selected text is piped to <code>cem</code> as the prompt.
+        Output streams into a dedicated tool window.</p>
+
+        <p>Configuration: <b>Settings → Tools → cem</b> sets the path to
+        the <code>cem</code> binary (default: <code>cem</code> on PATH).</p>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Tool window for cem output -->
+        <toolWindow id="cem"
+                    anchor="bottom"
+                    icon="AllIcons.Toolwindows.ToolWindowMessages"
+                    factoryClass="dev.cempw.intellij.CemToolWindowFactory"/>
+
+        <!-- Settings page -->
+        <applicationConfigurable parentId="tools"
+                                 id="dev.cempw.intellij.settings"
+                                 displayName="cem"
+                                 instance="dev.cempw.intellij.CemSettingsConfigurable"/>
+
+        <!-- Persistent settings -->
+        <applicationService serviceImplementation="dev.cempw.intellij.CemSettings"/>
+    </extensions>
+
+    <actions>
+        <group id="dev.cempw.intellij.MenuGroup" text="cem" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+
+            <action id="dev.cempw.intellij.ThinkAction"
+                    class="dev.cempw.intellij.CemAction$Think"
+                    text="cem: think on selection"
+                    description="Send selected text to the cem thinker">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt I"/>
+            </action>
+
+            <action id="dev.cempw.intellij.WriteAction"
+                    class="dev.cempw.intellij.CemAction$Write"
+                    text="cem: write on selection"
+                    description="Send selected text to the cem writer">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt W"/>
+            </action>
+
+            <action id="dev.cempw.intellij.PairAction"
+                    class="dev.cempw.intellij.CemAction$Pair"
+                    text="cem: pair on selection"
+                    description="Run cem pair mode (thinker → writer)">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt P"/>
+            </action>
+        </group>
+    </actions>
+</idea-plugin>
