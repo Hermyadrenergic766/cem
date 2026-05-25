@@ -1,5 +1,6 @@
 package dev.cempw.intellij
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ToolWindowFactory
@@ -39,10 +40,30 @@ class CemTab {
         isEditable = false
         background = JBColor.background()
     }
+    /** Çalışan subprocess. Tab kapanırsa öldürülür. */
+    @Volatile var process: Process? = null
+    /** Tab kapatıldı mı (idempotency için). */
+    @Volatile var cancelled = false
 
     init {
         component = JPanel(BorderLayout()).apply {
             add(JBScrollPane(textPane), BorderLayout.CENTER)
+        }
+    }
+
+    /** Tab kapatıldığında çağırılır: subprocess'i öldür. */
+    fun cancel() {
+        if (cancelled) return
+        cancelled = true
+        process?.let { p ->
+            if (p.isAlive) {
+                p.destroy()
+                // Grace period — sonra zorla
+                Thread {
+                    try { Thread.sleep(1500) } catch (_: InterruptedException) {}
+                    if (p.isAlive) p.destroyForcibly()
+                }.start()
+            }
         }
     }
 
@@ -109,6 +130,9 @@ class CemTab {
         /**
          * Yeni bir run-tab ekler, ToolWindow'u açıp seçili yapar.
          * Çağıran sonra tab.appendXxx ile çıktı yazar.
+         *
+         * Content disposer'ı tab.cancel()'a bağlanır → kullanıcı sekmeyi
+         * X ile kapattığında subprocess öldürülür.
          */
         fun newRun(toolWindow: ToolWindow, mode: String, snippet: String): CemTab {
             val tab = CemTab()
@@ -117,6 +141,7 @@ class CemTab {
             val content: Content = ContentFactory.getInstance()
                 .createContent(tab.component, title, true)
             content.isCloseable = true
+            content.setDisposer(Disposable { tab.cancel() })
             toolWindow.contentManager.addContent(content)
             toolWindow.contentManager.setSelectedContent(content)
             toolWindow.show()

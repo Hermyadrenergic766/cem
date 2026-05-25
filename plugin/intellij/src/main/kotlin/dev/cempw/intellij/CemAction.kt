@@ -138,13 +138,18 @@ sealed class CemAction(val mode: Mode) : AnAction() {
             val pb = ProcessBuilder(cmd).redirectErrorStream(true)
             if (workDir != null) pb.directory(java.io.File(workDir))
             tab.appendDim("  → $cemPath${mode.flag?.let { " $it" } ?: ""}")
+            tab.appendDim("  (sekmeyi kapatınca işlem iptal edilir)")
             val process = pb.start()
+            tab.process = process
             BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
                 reader.lineSequence().forEach { line ->
+                    if (tab.cancelled) return@forEach
                     ApplicationManager.getApplication().invokeLater { tab.appendLine(line) }
                 }
             }
             val exit = process.waitFor()
+            // Tab kapatıldıysa final mesajı yazmıyoruz — content zaten gitti
+            if (tab.cancelled) return
             ApplicationManager.getApplication().invokeLater {
                 if (exit != 0) tab.appendError("cem exited with code $exit")
                 else tab.appendDim("─── done ───")
