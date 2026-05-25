@@ -62,8 +62,13 @@ type ToolMeta struct {
 	Description string
 	// Deprecated boş değilse setup/cemi listelerinde uyarı satırı olarak basılır.
 	Deprecated string
-	// InstallCmd nil → manuel kurulum (kullanıcı kendisi indirir).
+	// InstallCmd — doğrudan exec (kabuk yok). nil → manuel kurulum.
 	InstallCmd []string
+	// InstallShellUnix — sh -c ile çalıştırılır (curl|bash gibi pipe'lar için).
+	// Linux + macOS'ta InstallCmd'den önce gelir.
+	InstallShellUnix string
+	// InstallShellWin — cmd /c ile çalıştırılır. Windows'ta InstallCmd'den önce gelir.
+	InstallShellWin string
 	// VersionFlag — cemi listesinde sürümü göstermek için (örn. "--version").
 	VersionFlag string
 	// RunFlags — cem aracı çalıştırırken eklenen flag'ler. Boşsa stdin'le çağrılır;
@@ -82,53 +87,17 @@ var KnownTools = map[string]ToolMeta{
 		RunFlags:    []string{"-p"}, // print mode: bir cevap üret, REPL'e girme
 	},
 	"agy": {
-		Name:        "Antigravity",
-		Description: "Google Antigravity — masaüstü IDE (CLI paketi henüz yok). İndir: https://antigravity.google.com",
-		InstallCmd:  nil,
-		VersionFlag: "--version",
-	},
-	"aider": {
-		Name:        "Aider",
-		Description: "Open-source pair-programming AI (aider.chat)",
-		InstallCmd:  []string{"pip", "install", "--upgrade", "aider-chat"},
-		VersionFlag: "--version",
-	},
-	"gemini": {
-		Name:        "Gemini",
-		Description: "Google Gemini CLI",
-		Deprecated:  "kişisel kullanım 2026-06-16'da sona eriyor",
-		InstallCmd:  []string{"npm", "install", "-g", "@google/gemini-cli"},
-		VersionFlag: "--version",
-		RunFlags:    []string{"-p"}, // print mode (non-interactive)
+		Name:             "Antigravity",
+		Description:      "Google Antigravity CLI (Gemini CLI'ın halefi, antigravity.google)",
+		InstallShellUnix: "curl -fsSL https://antigravity.google/cli/install.sh | bash",
+		InstallShellWin:  "powershell -NoProfile -Command \"iwr https://antigravity.google/cli/install.ps1 -UseB | iex\"",
+		VersionFlag:      "--version",
+		RunFlags:         []string{"-p"},
 	},
 	"gpt": {
 		Name:        "Codex",
 		Description: "OpenAI Codex CLI (formerly gpt CLI)",
 		InstallCmd:  []string{"npm", "install", "-g", "@openai/codex"},
-		VersionFlag: "--version",
-	},
-	"goose": {
-		Name:        "Goose",
-		Description: "Block's open-source AI agent (block.github.io/goose)",
-		InstallCmd:  []string{"pip", "install", "--upgrade", "goose-ai"},
-		VersionFlag: "--version",
-	},
-	"cody": {
-		Name:        "Cody",
-		Description: "Sourcegraph Cody CLI",
-		InstallCmd:  []string{"npm", "install", "-g", "@sourcegraph/cody"},
-		VersionFlag: "--version",
-	},
-	"continue": {
-		Name:        "Continue",
-		Description: "Continue.dev CLI — autopilot for VSCode/JetBrains",
-		InstallCmd:  []string{"npm", "install", "-g", "@continuedev/cli"},
-		VersionFlag: "--version",
-	},
-	"openhands": {
-		Name:        "OpenHands",
-		Description: "OpenHands (formerly OpenDevin) — autonomous SWE agent",
-		InstallCmd:  []string{"pip", "install", "--upgrade", "openhands-ai"},
 		VersionFlag: "--version",
 	},
 	"cursor": {
@@ -142,8 +111,7 @@ var KnownTools = map[string]ToolMeta{
 // orderedToolKeys — wizard/installer listelerinin sabit sırası.
 // KnownTools map iterasyonu rastgele; UI tutarlılığı için bu liste kullanılır.
 var orderedToolKeys = []string{
-	"claude", "agy", "aider", "gemini", "gpt",
-	"goose", "cody", "continue", "openhands", "cursor",
+	"claude", "agy", "gpt", "cursor",
 }
 
 // ─── Yollar ──────────────────────────────────────────────────────────────────

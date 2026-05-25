@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
@@ -108,13 +109,78 @@ func RunSetupWizard(cfg *GlobalConfig) error {
 	return nil
 }
 
+// pickInstallShell — platforma uyan shell-install komutunu döndürür; yoksa "".
+func pickInstallShell(meta ToolMeta) string {
+	if runtime.GOOS == "windows" {
+		return meta.InstallShellWin
+	}
+	return meta.InstallShellUnix
+}
+
+// ensureDep — bir bin'i PATH'da arar; yoksa kullanıcıya öneri sunar ve
+// (kullanıcı kabul ederse) OS paket yöneticisiyle kurmayı dener.
+// true → bin artık PATH'da; false → kurulum atlandı.
+func ensureDep(bin string) bool {
+	if _, err := exec.LookPath(bin); err == nil {
+		return true
+	}
+	install, label := depInstallCommand(bin)
+	if install == nil {
+		fmt.Println(styleError.Render(fmt.Sprintf("  ✗ %s PATH'de yok ve otomatik kurulum tanımlanmamış", bin)))
+		return false
+	}
+	fmt.Println(styleDim.Render(fmt.Sprintf("  ⚠ %s eksik — kurmak için: %s", bin, label)))
+	if !askYN("  Şimdi kurulsun mu?") {
+		return false
+	}
+	install.Stdout = os.Stdout
+	install.Stderr = os.Stderr
+	if err := install.Run(); err != nil {
+		fmt.Println(styleError.Render("  ✗ kurulum başarısız: " + err.Error()))
+		return false
+	}
+	_, err := exec.LookPath(bin)
+	return err == nil
+}
+
+// depInstallCommand — bin için OS-spesifik kurulum komutunu döndürür.
+func depInstallCommand(bin string) (*exec.Cmd, string) {
+	switch bin {
+	case "npm", "node":
+		switch runtime.GOOS {
+		case "windows":
+			return exec.Command("winget", "install", "-e", "--id", "OpenJS.NodeJS.LTS", "--accept-package-agreements", "--accept-source-agreements"),
+				"winget install OpenJS.NodeJS.LTS"
+		case "darwin":
+			return exec.Command("brew", "install", "node"), "brew install node"
+		case "linux":
+			return exec.Command("sudo", "apt-get", "install", "-y", "nodejs", "npm"),
+				"sudo apt-get install -y nodejs npm"
+		}
+	case "python", "python3":
+		switch runtime.GOOS {
+		case "windows":
+			return exec.Command("winget", "install", "-e", "--id", "Python.Python.3.12", "--accept-package-agreements", "--accept-source-agreements"),
+				"winget install Python.Python.3.12"
+		case "darwin":
+			return exec.Command("brew", "install", "python"), "brew install python"
+		case "linux":
+			return exec.Command("sudo", "apt-get", "install", "-y", "python3", "python3-pip"),
+				"sudo apt-get install -y python3 python3-pip"
+		}
+	}
+	return nil, ""
+}
+
 // InstallTool — bir AI CLI aracını kur
 func InstallTool(toolKey string, cfg *GlobalConfig) error {
 	meta, ok := KnownTools[toolKey]
 	if !ok {
 		return fmt.Errorf("bilinmeyen araç: %s", toolKey)
 	}
-	if meta.InstallCmd == nil {
+
+	shellCmd := pickInstallShell(meta)
+	if shellCmd == "" && meta.InstallCmd == nil {
 		fmt.Printf("  %s manuel kurulum gerekiyor\n", meta.Name)
 		if meta.Description != "" {
 			fmt.Printf("  → %s\n", meta.Description)
@@ -122,9 +188,25 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 		return nil
 	}
 
+	// Önkoşul: doğrudan komutsa ilk binary (npm, pip, python), shell-install ise sh/cmd zaten var.
+	if shellCmd == "" && len(meta.InstallCmd) > 0 {
+		if !ensureDep(meta.InstallCmd[0]) {
+			return fmt.Errorf("%s eksik — %s kurulamadı", meta.InstallCmd[0], meta.Name)
+		}
+	}
+
 	fmt.Printf("  ⏳ %s kuruluyor...\n", styleBold.Render(meta.Name))
 
-	cmd := exec.Command(meta.InstallCmd[0], meta.InstallCmd[1:]...)
+	var cmd *exec.Cmd
+	if shellCmd != "" {
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("cmd", "/c", shellCmd)
+		} else {
+			cmd = exec.Command("sh", "-c", shellCmd)
+		}
+	} else {
+		cmd = exec.Command(meta.InstallCmd[0], meta.InstallCmd[1:]...)
+	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
@@ -133,7 +215,8 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 
 	version := ""
 	if meta.VersionFlag != "" {
-		out, _ := exec.Command(meta.InstallCmd[0], meta.VersionFlag).Output()
+		// Versiyonu ararken tool adını kullan; shell install için meta.InstallCmd nil olabilir.
+		out, _ := exec.Command(toolKey, meta.VersionFlag).Output()
 		version = strings.TrimSpace(string(out))
 	}
 

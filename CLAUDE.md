@@ -58,7 +58,8 @@ cem/
 ├── cmd_cem.go          — Cobra root + rolesCmd, setupCmd, initCmd, statusCmd
 ├── cmd_doctor.go       — `cem doctor`: diagnostic report
 ├── cmd_history.go      — `cem history`: -n N, --clear
-├── cmd_cemi.go         — `cemi`: install tools (10 known) + all + update
+├── cmd_cemi.go         — `cemi`: install tools (4 known: claude, agy, gpt, cursor) + all + update
+├── cmd_update.go       — `cem update`: cem.pw/r/'den son sürümü indir + yerine yaz
 ├── cmd_cemir.go        — `cemir`: remove tools (single + all)
 ├── cmd_uninstall.go    — `cem uninstall`: remove the binaries themselves
 ├── install.sh / .ps1   — User-facing installer via cem.pw/install

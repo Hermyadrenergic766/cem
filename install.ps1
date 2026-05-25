@@ -1,4 +1,4 @@
-﻿# ⚡ CEM — Compose · Execute · Multiplex
+# ⚡ CEM — Compose · Execute · Multiplex
 # Kurulum: iwr cem.pw/install.ps1 -UseB | iex
 
 # UTF-8 çıktı (Türkçe karakter desteği — PS 5.1 + 7.x)
@@ -105,5 +105,5 @@ Write-Host "  cemi claude        → Claude kur" -ForegroundColor DarkGray
 Write-Host "  cemi agy           → Agy kur" -ForegroundColor DarkGray
 Write-Host "  cem roles          → kim ne yapıyor?" -ForegroundColor DarkGray
 Write-Host ""
-Write-Host "  Döküman → https://cem.pw" -ForegroundColor DarkGray
+Write-Host "  Doküman → https://github.com/muslu/cem" -ForegroundColor DarkGray
 Write-Host ""

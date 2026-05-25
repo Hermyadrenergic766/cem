@@ -10,8 +10,9 @@ INSTALL_DIR="/usr/local/bin"
 FALLBACK_DIR="$HOME/.local/bin"
 
 # ─── Renkler ─────────────────────────────────────────────────────────────────
-reset="\033[0m"; bold="\033[1m"
-cyan="\033[36m"; green="\033[32m"; yellow="\033[33m"; red="\033[31m"; dim="\033[2m"
+ESC=$(printf '\033')
+reset="${ESC}[0m"; bold="${ESC}[1m"
+cyan="${ESC}[36m"; green="${ESC}[32m"; yellow="${ESC}[33m"; red="${ESC}[31m"; dim="${ESC}[2m"
 
 info()    { printf "${cyan}  →${reset} %s\n" "$1"; }
 ok()      { printf "${green}  ✓${reset} ${bold}%s${reset}\n" "$1"; }
@@ -155,4 +156,4 @@ printf "  ${dim}cem -p \"görev\"${reset}     → pair modu\n"
 printf "  ${dim}cemi claude${reset}        → Claude kur\n"
 printf "  ${dim}cemi agy${reset}           → Agy kur\n"
 printf "  ${dim}cem roles${reset}          → kim ne yapıyor?\n"
-printf "\n  ${dim}Döküman → https://cem.pw${reset}\n\n"
+printf "\n  ${dim}Doküman → https://github.com/muslu/cem${reset}\n\n"

@@ -59,10 +59,7 @@ func TestActiveRoles_ProjectPartialFallsBackToGlobal(t *testing.T) {
 }
 
 func TestKnownTools_HasExpectedKeys(t *testing.T) {
-	expected := []string{
-		"claude", "agy", "aider", "gemini", "gpt",
-		"goose", "cody", "continue", "openhands", "cursor",
-	}
+	expected := []string{"claude", "agy", "gpt", "cursor"}
 	for _, key := range expected {
 		meta, ok := KnownTools[key]
 		if !ok {
@@ -97,17 +94,13 @@ func TestOrderedToolKeys_MatchesKnownTools(t *testing.T) {
 	}
 }
 
-func TestGemini_DeprecationAnnounced(t *testing.T) {
-	meta := KnownTools["gemini"]
-	if meta.Deprecated == "" {
-		t.Error("gemini: 2026-06-16 personal-use deprecation Deprecated alanında belirtilmeli")
-	}
-}
-
 func TestAgy_IsAntigravity(t *testing.T) {
 	meta := KnownTools["agy"]
 	if meta.Name != "Antigravity" {
 		t.Errorf("agy.Name 'Antigravity' olmalı, alındı: %q", meta.Name)
+	}
+	if meta.InstallShellUnix == "" || meta.InstallShellWin == "" {
+		t.Error("agy: InstallShell{Unix,Win} her iki platform için tanımlı olmalı")
 	}
 }
 

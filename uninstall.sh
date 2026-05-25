@@ -4,8 +4,9 @@
 
 set -e
 
-reset="\033[0m"; bold="\033[1m"
-cyan="\033[36m"; green="\033[32m"; yellow="\033[33m"; red="\033[31m"; dim="\033[2m"
+ESC=$(printf '\033')
+reset="${ESC}[0m"; bold="${ESC}[1m"
+cyan="${ESC}[36m"; green="${ESC}[32m"; yellow="${ESC}[33m"; red="${ESC}[31m"; dim="${ESC}[2m"
 
 ok()   { printf "${green}  ✓${reset} %s\n" "$1"; }
 skip() { printf "${dim}  ○${reset} %s\n" "$1"; }
