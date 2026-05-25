@@ -46,14 +46,14 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		if roles.Thinker == "" {
 			return errMissingRole("thinker")
 		}
-		printAIHeader("🧠 thinker", roles.Thinker)
+		printAIHeader("🧠 thinker", roles.Thinker, rc)
 		return runTool(roles.Thinker, rc, input, "🧠")
 
 	case ModeWrite:
 		if roles.Writer == "" {
 			return errMissingRole("writer")
 		}
-		printAIHeader("✍️  writer", roles.Writer)
+		printAIHeader("✍️  writer", roles.Writer, rc)
 		return runTool(roles.Writer, rc, input, "✍️")
 
 	case ModePair:
@@ -70,7 +70,7 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		if err != nil {
 			return err
 		}
-		printAIHeader("🧠 thinker", roles.Thinker)
+		printAIHeader("🧠 thinker", roles.Thinker, rc)
 		fmt.Println(thought)
 
 		// Writer kararı:
@@ -86,7 +86,7 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		}
 
 		fmt.Println()
-		printAIHeader("✍️  writer", roles.Writer)
+		printAIHeader("✍️  writer", roles.Writer, rc)
 		writerInput := input + "\n\n--- Thinker analizi ---\n" + thought
 		return runTool(roles.Writer, rc, writerInput, "✍️")
 	}
@@ -133,12 +133,21 @@ func resolveModel(toolKey string, rc *ResolvedConfig) string {
 	return ""
 }
 
-// printAIHeader — her AI çıktısının üstüne kim olduğunu belirten net bir başlık
-// basar. Örnek: "─── 🧠 thinker · claude ───"
-func printAIHeader(role, name string) {
+// printAIHeader — her AI çıktısının üstüne kim olduğunu + hangi modeli
+// kullandığını gösteren başlık. Örnek:
+//
+//	─── 🧠 thinker · claude (opus) ───
+//	─── ✍️  writer · agy (gemini-3-flash) ───
+//	─── 🧠 thinker · claude (default) ───   // model seçilmemiş, CLI default
+func printAIHeader(role, toolKey string, rc *ResolvedConfig) {
 	bar := strings.Repeat("─", 3)
+	model := resolveModel(toolKey, rc)
+	if model == "" {
+		model = "default"
+	}
 	fmt.Println()
-	fmt.Println(styleBold.Render(fmt.Sprintf("  %s %s · %s %s", bar, role, name, bar)))
+	fmt.Println(styleBold.Render(fmt.Sprintf("  %s %s · %s (%s) %s",
+		bar, role, toolKey, model, bar)))
 }
 
 func errMissingRole(name string) error {
