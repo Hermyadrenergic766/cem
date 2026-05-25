@@ -4,7 +4,6 @@
   "description": "Drive Claude · Antigravity · Codex · Cursor from one command. Adds Editor commands that pipe the selection to `cem` and stream the response.",
   "version": "0.1.0",
   "publisher": "cempw",
-  "icon": "icon.png",
   "license": "MIT",
   "engines": {
     "vscode": "^1.95.0"
