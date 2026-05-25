@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 )
@@ -67,9 +68,21 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 		}
 		fmt.Println(styleDim.Render("  🧠 " + roles.Thinker + " analizi:"))
 		fmt.Println(thought)
+
+		// Writer kararı:
+		//   - Aynı AI ise (thinker == writer) tekrar çağırmak çıktıyı duplike eder.
+		//   - Soru kod istemiyorsa ve thinker zaten kod üretmediyse writer atlanır.
+		if roles.Thinker == roles.Writer {
+			fmt.Println(styleDim.Render("\n  (writer = thinker, ikinci çağrı atlandı)"))
+			return nil
+		}
+		if !hasCodeBlock(thought) && !looksLikeCodeRequest(input) {
+			fmt.Println(styleDim.Render("\n  (yazılacak kod yok, writer atlandı)"))
+			return nil
+		}
+
 		fmt.Println()
 		fmt.Println(styleDim.Render("  ✍️  " + roles.Writer + " yazıyor..."))
-
 		writerInput := input + "\n\n--- Thinker analizi ---\n" + thought
 		return runTool(roles.Writer, rc, writerInput, "✍️")
 	}
@@ -99,6 +112,19 @@ func resolveCommand(toolKey string, rc *ResolvedConfig) string {
 		return p
 	}
 	return toolKey
+}
+
+// codeRequestRe — input'ta kod yazma niyetini gösteren kelimeler (TR + EN).
+var codeRequestRe = regexp.MustCompile(`(?i)\b(yaz|kod|script|fonksiyon|class|method|implement|kodla|oluştur|üret|döndür|export|function|code|write|build|generate|refactor|debug|fix)\b`)
+
+// hasCodeBlock — metin markdown kod bloğu içeriyor mu (``` veya satır başı 4-boşluk değil).
+func hasCodeBlock(s string) bool {
+	return strings.Contains(s, "```")
+}
+
+// looksLikeCodeRequest — input metni kod yazılması/üretilmesi gerektiğini ima ediyor mu.
+func looksLikeCodeRequest(s string) bool {
+	return codeRequestRe.MatchString(s)
 }
 
 // fallbackInstallPath — araç PATH'da yoksa standart konumlarda arar.
