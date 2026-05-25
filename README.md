@@ -131,6 +131,24 @@ Supported providers:
 
 Rotation trigger: if stderr contains `rate limit`, `429`, `quota`, `too many requests`, or `overloaded`, cem advances to the next key. If all keys are exhausted, the last error is returned.
 
+### Post-install auth prompt
+
+After a successful `cemi <tool>` install (when the tool supports API keys), cem asks how you want to authenticate:
+
+```
+  Claude için auth:
+    [1] API key kaydet (çoklu key + rate-limit rotasyonu)
+    [2] Subscription / OAuth login (sonra: 'claude' çalıştır)
+    [3] Şimdilik atla
+  Seçim [1-3]:
+```
+
+Picking **1** records your key (and lets you add more in a loop). Picking **2** prints the binary you should run to start the OAuth/subscription flow. With `cemi -y` the prompt is skipped silently — a hint reminds you of `cem keys add <provider>` and the binary name.
+
+### Safety: .gitignore safeguard
+
+After every successful install, if the current directory is a git repo cem appends `.cem.yaml` to `.gitignore` (and tells you it did). If there is no `.gitignore` at all, a warning is printed. This prevents accidentally committing a project-local cem config.
+
 ---
 
 ## Diagnostics

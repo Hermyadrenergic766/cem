@@ -318,7 +318,108 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 	}
 	cfg.Tools[toolKey] = InstalledTool{Command: command, Version: version}
 	fmt.Printf("  %s %s kuruldu\n", styleSuccess.Render("✓"), meta.Name)
+
+	// Post-install auth setup: provider varsa kullanıcıya API key girme şansı ver,
+	// yoksa CLI'ın kendi login akışını işaret et.
+	postInstallAuthSetup(toolKey, meta, command, cfg)
+
+	// Her kurulumdan sonra .gitignore güvenliği — proje config'i (.cem.yaml)
+	// yanlışlıkla repo'ya gitmesin.
+	ensureGitignoreSafe()
+
 	return nil
+}
+
+// postInstallAuthSetup — provider tanımlı ise kullanıcıyı API key / login
+// arasında seçim yapmaya yönlendirir. autoYes modunda atlanır (kullanıcı
+// non-interactive istemiş, sessiz bırak).
+func postInstallAuthSetup(toolKey string, meta ToolMeta, binPath string, cfg *GlobalConfig) {
+	if meta.Provider == "" || meta.APIKeyEnv == "" {
+		// OAuth-only araç (agy, cursor) — CLI kendi login'ini yönetir
+		return
+	}
+	if autoYes {
+		fmt.Println(styleDim.Render(fmt.Sprintf(
+			"  ⓘ Auth: 'cem keys add %s' ile key gir veya '%s' çalıştırıp login ol",
+			meta.Provider, filepath.Base(binPath))))
+		return
+	}
+	fmt.Println()
+	fmt.Printf("  %s için auth:\n", styleBold.Render(meta.Name))
+	fmt.Println(styleDim.Render("    [1] API key kaydet (çoklu key + rate-limit rotasyonu)"))
+	fmt.Println(styleDim.Render("    [2] Subscription / OAuth login (sonra: '" + filepath.Base(binPath) + "' çalıştır)"))
+	fmt.Println(styleDim.Render("    [3] Şimdilik atla"))
+	fmt.Print("  Seçim [1-3]: ")
+	reader := bufio.NewReader(os.Stdin)
+	choice, _ := reader.ReadString('\n')
+	choice = strings.TrimSpace(choice)
+	switch choice {
+	case "1":
+		for {
+			fmt.Print("  API key: ")
+			val, _ := reader.ReadString('\n')
+			val = strings.TrimSpace(val)
+			if val == "" {
+				fmt.Println(styleDim.Render("  iptal"))
+				return
+			}
+			fmt.Print("  Etiket (opsiyonel, örn. 'personal'): ")
+			label, _ := reader.ReadString('\n')
+			label = strings.TrimSpace(label)
+			if cfg.APIKeys == nil {
+				cfg.APIKeys = map[string][]APIKey{}
+			}
+			cfg.APIKeys[meta.Provider] = append(cfg.APIKeys[meta.Provider],
+				APIKey{Value: val, Label: label})
+			fmt.Printf("  %s %s key #%d kaydedildi\n",
+				styleSuccess.Render("✓"), meta.Provider, len(cfg.APIKeys[meta.Provider]))
+			if !askYN("  Başka key eklemek ister misin?") {
+				return
+			}
+		}
+	case "2":
+		fmt.Println(styleDim.Render("  → " + filepath.Base(binPath) + "  (interaktif login akışı açılır)"))
+	default:
+		fmt.Println(styleDim.Render("  Atlandı. Sonra: cem keys add " + meta.Provider))
+	}
+}
+
+// ensureGitignoreSafe — CWD bir git repo ise .gitignore'da .cem.yaml var mı
+// kontrol eder; yoksa ekler ve kullanıcıya bildirir. Repo değilse sessizce
+// döner. cem'in proje config'i yanlışlıkla repo'ya commit edilmesin diye.
+func ensureGitignoreSafe() {
+	wd, err := os.Getwd()
+	if err != nil {
+		return
+	}
+	if _, err := os.Stat(filepath.Join(wd, ".git")); err != nil {
+		return // git repo değil
+	}
+	gi := filepath.Join(wd, ".gitignore")
+	entry := ".cem.yaml"
+	data, err := os.ReadFile(gi)
+	if err != nil {
+		// .gitignore yok — uyar
+		fmt.Println(styleWarn.Render(
+			"  ⚠ Git repo'da .gitignore yok — .cem.yaml repo'ya gidebilir"))
+		return
+	}
+	if strings.Contains("\n"+string(data)+"\n", "\n"+entry+"\n") {
+		return // zaten var
+	}
+	f, err := os.OpenFile(gi, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	suffix := ""
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		suffix = "\n"
+	}
+	if _, err := f.WriteString(suffix + "\n# cem proje config\n" + entry + "\n"); err != nil {
+		return
+	}
+	fmt.Println(styleSuccess.Render("  ✓ .gitignore'a '" + entry + "' eklendi"))
 }
 
 // RemoveTool — bir AI CLI aracını kaldır
