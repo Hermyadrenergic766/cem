@@ -93,6 +93,22 @@ func Run(input string, mode Mode, rc *ResolvedConfig) error {
 	return fmt.Errorf("bilinmeyen mod")
 }
 
+// resolveModel — toolKey için kullanılacak modeli döndürür. Sıra:
+// 1) Proje config'i (.cem.yaml > models > <key>)
+// 2) Global config (~/.cem/config.yaml > tools > <key> > model)
+// 3) Boş → CLI default kullanılır.
+func resolveModel(toolKey string, rc *ResolvedConfig) string {
+	if rc.Project != nil && rc.Project.Models != nil {
+		if m, ok := rc.Project.Models[toolKey]; ok && m != "" {
+			return m
+		}
+	}
+	if t, ok := rc.Global.Tools[toolKey]; ok && t.Model != "" {
+		return t.Model
+	}
+	return ""
+}
+
 // printAIHeader — her AI çıktısının üstüne kim olduğunu belirten net bir başlık
 // basar. Örnek: "─── 🧠 thinker · claude ───"
 func printAIHeader(role, name string) {
@@ -284,10 +300,8 @@ func runTool(toolKey string, rc *ResolvedConfig, input, icon string) error {
 
 	meta := KnownTools[toolKey]
 	args := append([]string{}, meta.RunFlags...)
-	if meta.ModelFlag != "" {
-		if t, ok := rc.Global.Tools[toolKey]; ok && t.Model != "" {
-			args = append(args, meta.ModelFlag, t.Model)
-		}
+	if model := resolveModel(toolKey, rc); model != "" && meta.ModelFlag != "" {
+		args = append(args, meta.ModelFlag, model)
 	}
 	if meta.PromptAsArg {
 		args = append(args, input)
@@ -329,10 +343,8 @@ func captureTool(toolKey string, rc *ResolvedConfig, input string) (string, erro
 
 	meta := KnownTools[toolKey]
 	args := append([]string{}, meta.RunFlags...)
-	if meta.ModelFlag != "" {
-		if t, ok := rc.Global.Tools[toolKey]; ok && t.Model != "" {
-			args = append(args, meta.ModelFlag, t.Model)
-		}
+	if model := resolveModel(toolKey, rc); model != "" && meta.ModelFlag != "" {
+		args = append(args, meta.ModelFlag, model)
 	}
 	if meta.PromptAsArg {
 		args = append(args, input)

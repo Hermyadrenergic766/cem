@@ -94,6 +94,22 @@ func removeAll(cfg *GlobalConfig) {
 		}
 	}
 
+	// Orphan girdiler: cfg.Tools'da var ama artık KnownTools'da yok (eski sürüm
+	// kalıntısı, örn. v0.1.13'ten önce 'gemini'). Config'den siliyoruz; binary
+	// kaldırma denemiyoruz (paket adı belirsiz).
+	for key := range cfg.Tools {
+		if _, known := KnownTools[key]; known {
+			continue
+		}
+		delete(cfg.Tools, key)
+		fmt.Printf("  %s %s  %s\n",
+			styleSuccess.Render("✓"), styleBold.Render(key),
+			styleDim.Render("(orphan — config'den temizlendi, binary varsa manuel sil)"))
+	}
+	if err := saveGlobalConfig(cfg); err != nil {
+		fmt.Println(styleWarn.Render("  ⚠ config kaydedilemedi: " + err.Error()))
+	}
+
 	fmt.Println()
 	if len(failed) > 0 {
 		fmt.Printf("  %s %d araç kaldırılamadı: %s\n",

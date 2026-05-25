@@ -359,22 +359,33 @@ func InstallTool(toolKey string, cfg *GlobalConfig) error {
 		version = strings.TrimSpace(string(out))
 	}
 
-	// Shell-install (curl|bash, iwr|iex) sıklıkla PATH'i güncellemiyor;
-	// önce PATH'da arıyoruz, yoksa bilinen kurulum konumlarını deniyoruz.
+	// Command'i her zaman mutlak yol olarak sakla — cemir gibi kaldırma
+	// işlemleri PATH lookup'a güvenmeden direkt dosyaya ulaşsın.
 	command := binName
-	if _, lookErr := exec.LookPath(binName); lookErr != nil {
-		if fallback := fallbackInstallPath(toolKey); fallback != "" {
-			command = fallback
-			fmt.Println(styleDim.Render("    bulundu: " + fallback))
-		} else {
-			cfg.Tools[toolKey] = InstalledTool{Command: toolKey, Version: version}
-			fmt.Printf("  %s %s kuruldu ama %s henüz PATH'de değil\n",
-				styleWarn.Render("⚠"), meta.Name, toolKey)
-			fmt.Println(styleDim.Render("    Yeni terminal aç (PATH bu oturumda yenilenmez)"))
-			return nil
+	if abs, err := exec.LookPath(binName); err == nil {
+		command = abs
+	} else if fallback := fallbackInstallPath(toolKey); fallback != "" {
+		command = fallback
+		fmt.Println(styleDim.Render("    bulundu: " + fallback))
+	} else {
+		// Henüz PATH'da yok ve fallback yolu da bulunamadı — küçük ihtimal.
+		// toolKey'i sakla, cemir manuel sil ipucu verir.
+		existing := cfg.Tools[toolKey]
+		existing.Version = version
+		if existing.Command == "" {
+			existing.Command = toolKey
 		}
+		cfg.Tools[toolKey] = existing
+		fmt.Printf("  %s %s kuruldu ama %s henüz PATH'de değil\n",
+			styleWarn.Render("⚠"), meta.Name, toolKey)
+		fmt.Println(styleDim.Render("    Yeni terminal aç (PATH bu oturumda yenilenmez)"))
+		return nil
 	}
-	cfg.Tools[toolKey] = InstalledTool{Command: command, Version: version}
+	// Model alanını koru — wizard daha önce set etmiş olabilir
+	existing := cfg.Tools[toolKey]
+	existing.Command = command
+	existing.Version = version
+	cfg.Tools[toolKey] = existing
 	fmt.Printf("  %s %s kuruldu\n", styleSuccess.Render("✓"), meta.Name)
 
 	// Post-install auth setup: provider varsa kullanıcıya API key girme şansı ver,

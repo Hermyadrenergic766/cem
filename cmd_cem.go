@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -204,6 +206,24 @@ var initCmd = &cobra.Command{
 		}
 
 		pc := &ProjectConfig{Roles: &Roles{Thinker: t, Writer: w}}
+
+		// Model seçimi — sadece interaktif modda (len(args) < 2) ve autoYes'siz
+		if len(args) < 2 && !autoYes {
+			pc.Models = map[string]string{}
+			fmt.Println()
+			if m := pickProjectModel(t, "🧠 thinker", rc.Global); m != "" {
+				pc.Models[t] = m
+			}
+			if w != t {
+				if m := pickProjectModel(w, "✍️  writer", rc.Global); m != "" {
+					pc.Models[w] = m
+				}
+			}
+			if len(pc.Models) == 0 {
+				pc.Models = nil // YAML'da boş key görünmesin
+			}
+		}
+
 		if err := SaveProjectConfig(pc); err != nil {
 			fmt.Println(styleError.Render("✗ " + err.Error()))
 			os.Exit(1)
@@ -211,12 +231,64 @@ var initCmd = &cobra.Command{
 
 		fmt.Println()
 		fmt.Println(styleSuccess.Render("✓ .cem.yaml oluşturuldu"))
-		fmt.Printf("  🧠 Thinker → %s\n", styleBold.Render(t))
-		fmt.Printf("  ✍️  Writer  → %s\n", styleBold.Render(w))
+		fmt.Printf("  🧠 Thinker → %s", styleBold.Render(t))
+		if m, ok := pc.Models[t]; ok && m != "" {
+			fmt.Printf("  (model: %s)", styleBold.Render(m))
+		}
+		fmt.Println()
+		fmt.Printf("  ✍️  Writer  → %s", styleBold.Render(w))
+		if m, ok := pc.Models[w]; ok && m != "" {
+			fmt.Printf("  (model: %s)", styleBold.Render(m))
+		}
+		fmt.Println()
 		fmt.Println()
 		fmt.Println(styleDim.Render("  Bu dizinden çalışırken proje config geçerli olur."))
 		fmt.Println(styleDim.Render("  cem roles  →  aktif rolleri gör"))
 	},
+}
+
+// pickProjectModel — cem init için: kullanıcıya proje-spesifik model seçtirir.
+// Mevcut global model (varsa) varsayılan olarak sunulur. Boş seçim = global'i
+// devral (proje override yok).
+func pickProjectModel(toolKey, label string, global *GlobalConfig) string {
+	meta, ok := KnownTools[toolKey]
+	if !ok || meta.ModelFlag == "" || len(meta.Models) == 0 {
+		return ""
+	}
+	current := ""
+	if t, ok := global.Tools[toolKey]; ok {
+		current = t.Model
+	}
+	if current == "" {
+		current = "CLI default"
+	}
+	fmt.Printf("  %s · %s için proje modeli (global: %s):\n",
+		styleBold.Render(label), styleBold.Render(meta.Name),
+		styleDim.Render(current))
+	for i, m := range meta.Models {
+		fmt.Printf("      [%d] %s\n", i+1, m)
+	}
+	fmt.Printf("      [%d] custom\n", len(meta.Models)+1)
+	fmt.Printf("      [0] global'i kullan (override yok)\n")
+	fmt.Print("  Seçim: ")
+	reader := bufio.NewReader(os.Stdin)
+	resp, _ := reader.ReadString('\n')
+	resp = strings.TrimSpace(resp)
+	switch resp {
+	case "", "0":
+		return ""
+	}
+	idx, err := strconv.Atoi(resp)
+	if err != nil || idx < 1 || idx > len(meta.Models)+1 {
+		fmt.Println(styleDim.Render("  geçersiz, global kullanılacak"))
+		return ""
+	}
+	if idx == len(meta.Models)+1 {
+		fmt.Print("  Model adı: ")
+		line, _ := reader.ReadString('\n')
+		return strings.TrimSpace(line)
+	}
+	return meta.Models[idx-1]
 }
 
 // ─── cem status ──────────────────────────────────────────────────────────────

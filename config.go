@@ -44,6 +44,10 @@ type GlobalConfig struct {
 
 type ProjectConfig struct {
 	Roles *Roles `yaml:"roles,omitempty"`
+	// Models — proje-spesifik model override'ları. Anahtar = toolKey (claude, agy, ...);
+	// değer = CLI'a verilecek model adı. Boş veya tanımsızsa global config'deki
+	// tools.<key>.model kullanılır; o da yoksa CLI default'u.
+	Models map[string]string `yaml:"models,omitempty"`
 }
 
 type ResolvedConfig struct {
