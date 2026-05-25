@@ -35,13 +35,29 @@ func selfUpdate() error {
 		ext = ".exe"
 	}
 
-	fmt.Println(styleDim.Render(fmt.Sprintf("  ⏳ son sürüm indiriliyor (%s/%s)...", osName, archName)))
-
 	myPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("kendi yolu alınamadı: %w", err)
 	}
 	installDir := filepath.Dir(myPath)
+
+	// Pre-flight: kurulum dizinine yazabiliyor muyuz?
+	if !canWriteDir(installDir) {
+		if osName == "windows" {
+			fmt.Println(styleError.Render("  ✗ " + installDir + " yazılabilir değil"))
+			fmt.Println(styleDim.Render("  Yönetici PowerShell'inde çalıştır:  cem update"))
+			return fmt.Errorf("yetkisiz")
+		}
+		// Unix: sudo ile yeniden başlat
+		fmt.Println(styleDim.Render("  ⚠ " + installDir + " yazılabilir değil, sudo ile devam ediliyor..."))
+		c := exec.Command("sudo", myPath, "update")
+		c.Stdin = os.Stdin
+		c.Stdout = os.Stdout
+		c.Stderr = os.Stderr
+		return c.Run()
+	}
+
+	fmt.Println(styleDim.Render(fmt.Sprintf("  ⏳ son sürüm indiriliyor (%s/%s)...", osName, archName)))
 
 	for _, name := range []string{"cem", "cemi", "cemir"} {
 		asset := fmt.Sprintf("%s-%s-%s%s", name, osName, archName, ext)
@@ -67,6 +83,18 @@ func selfUpdate() error {
 		fmt.Printf("\n  %s", string(v))
 	}
 	return nil
+}
+
+// canWriteDir — geçici dosya açıp silerek dizinin yazılabilirliğini test eder.
+func canWriteDir(dir string) bool {
+	f, err := os.CreateTemp(dir, ".cem-update-probe-*")
+	if err != nil {
+		return false
+	}
+	name := f.Name()
+	f.Close()
+	os.Remove(name)
+	return true
 }
 
 func downloadToTemp(url string) (string, error) {

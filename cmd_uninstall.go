@@ -45,6 +45,9 @@ func runUninstall() {
 		names = []string{"cem.exe", "cemi.exe", "cemir.exe"}
 	}
 
+	selfPath, _ := os.Executable()
+	scheduledSelfDelete := ""
+
 	removed := 0
 	for _, name := range names {
 		path, err := exec.LookPath(name)
@@ -53,7 +56,17 @@ func runUninstall() {
 			continue
 		}
 		if err := os.Remove(path); err != nil {
-			// sudo gerekebilir
+			// Windows: çalışan exe'yi silemiyoruz — detached cmd ile gecikmeli sil
+			if runtime.GOOS == "windows" && samePath(path, selfPath) {
+				if scheduleWindowsSelfDelete(path) {
+					fmt.Printf("  %s %-8s çıkışta silinecek %s\n",
+						styleSuccess.Render("✓"), name, styleDim.Render(path))
+					scheduledSelfDelete = path
+					removed++
+					continue
+				}
+			}
+			// Unix: sudo ile dene
 			if sudoRemove(path) {
 				fmt.Printf("  %s %-8s %s\n",
 					styleSuccess.Render("✓"), name, styleDim.Render(path))
@@ -61,7 +74,11 @@ func runUninstall() {
 			} else {
 				fmt.Printf("  %s %-8s silinemedi: %v\n",
 					styleError.Render("✗"), name, err)
-				fmt.Printf("    %s\n", styleDim.Render("Manuel: sudo rm "+path))
+				hint := "sudo rm " + path
+				if runtime.GOOS == "windows" {
+					hint = `del /f "` + path + `"  (yönetici cmd)`
+				}
+				fmt.Printf("    %s\n", styleDim.Render("Manuel: "+hint))
 			}
 		} else {
 			fmt.Printf("  %s %-8s %s\n",
@@ -69,6 +86,7 @@ func runUninstall() {
 			removed++
 		}
 	}
+	_ = scheduledSelfDelete
 
 	// ── Config klasörü ────────────────────────────────────────────────────────
 	fmt.Println()
@@ -127,6 +145,36 @@ func sudoRemove(path string) bool {
 	// stdin'i bağla (sudo şifre sorabilir)
 	cmd.Stdin = os.Stdin
 	return cmd.Run() == nil
+}
+
+// samePath — iki yolu OS-uygun karşılaştırır (Windows büyük/küçük harf duyarsız).
+func samePath(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	aa, _ := filepath.Abs(a)
+	bb, _ := filepath.Abs(b)
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(aa, bb)
+	}
+	return aa == bb
+}
+
+// scheduleWindowsSelfDelete — biz çıktıktan sonra cem.exe'yi silmesi için
+// detached bir cmd.exe başlatır. ping ile ~1s bekler, sonra del.
+func scheduleWindowsSelfDelete(path string) bool {
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	// /c "ping -n 2 127.0.0.1 > nul & del /f /q <path>"
+	cmd := exec.Command("cmd", "/c",
+		"ping -n 2 127.0.0.1 > nul & del /f /q "+`"`+path+`"`)
+	// stdin/out/err'i bağlama → süreç ana process'e tutunmadan devam etsin
+	if err := cmd.Start(); err != nil {
+		return false
+	}
+	_ = cmd.Process.Release()
+	return true
 }
 
 // PATH'daki tüm cem binary konumlarını bul (birden fazla olabilir)
