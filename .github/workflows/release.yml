@@ -85,12 +85,15 @@ jobs:
         working-directory: plugin/intellij
         run: gradle buildPlugin --no-daemon --warning-mode all
 
-      - name: Rename to versioned filename
+      - name: Rename to versioned filename (if needed)
         working-directory: plugin/intellij/build/distributions
         run: |
           ls -la
+          TARGET="cem-intellij-${GITHUB_REF_NAME}.zip"
           for f in *.zip; do
-            mv "$f" "cem-intellij-${GITHUB_REF_NAME}.zip"
+            if [ "$f" != "$TARGET" ]; then
+              mv "$f" "$TARGET"
+            fi
           done
           ls -la
 
@@ -98,6 +101,72 @@ jobs:
         with:
           name: cem-intellij-plugin
           path: plugin/intellij/build/distributions/*.zip
+
+  build-vscode-extension:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Sync version to tag
+        working-directory: plugin/vscode
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node -e "let p=require('./package.json');p.version='${VERSION}';require('fs').writeFileSync('package.json',JSON.stringify(p,null,2));"
+          grep version package.json | head
+
+      - name: Install deps + package
+        working-directory: plugin/vscode
+        run: |
+          npm install --no-audit --no-fund --no-package-lock
+          npx vsce package --no-dependencies --out cem-vscode-${GITHUB_REF_NAME}.vsix
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cem-vscode-extension
+          path: plugin/vscode/*.vsix
+
+  build-mcp-server:
+    name: MCP server (${{ matrix.os }}-${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: linux,   arch: amd64, ext: "" }
+          - { os: linux,   arch: arm64, ext: "" }
+          - { os: darwin,  arch: amd64, ext: "" }
+          - { os: darwin,  arch: arm64, ext: "" }
+          - { os: windows, arch: amd64, ext: ".exe" }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build cem-mcp
+        working-directory: plugin/mcp
+        env:
+          GOOS:   ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p dist
+          OUT="dist/cem-mcp-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.ext }}"
+          go build -trimpath -ldflags="-s -w" -o "$OUT" .
+          ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cem-mcp-${{ matrix.os }}-${{ matrix.arch }}
+          path: plugin/mcp/dist/*
 
   release:
     needs: build              # plugin is best-effort; binaries always ship

@@ -1,0 +1,85 @@
+{
+  "name": "cem",
+  "displayName": "cem — multi-AI orchestrator",
+  "description": "Drive Claude · Antigravity · Codex · Cursor from one command. Adds Editor commands that pipe the selection to `cem` and stream the response.",
+  "version": "0.1.0",
+  "publisher": "cempw",
+  "icon": "icon.png",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/muslu/cem.git",
+    "directory": "plugin/vscode"
+  },
+  "homepage": "https://cem.pw",
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "claude",
+    "codex",
+    "antigravity",
+    "cursor",
+    "llm",
+    "multi-model"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onCommand:cem.think",
+    "onCommand:cem.write",
+    "onCommand:cem.pair"
+  ],
+  "contributes": {
+    "commands": [
+      { "command": "cem.think", "title": "cem: think on selection", "category": "cem" },
+      { "command": "cem.write", "title": "cem: write on selection", "category": "cem" },
+      { "command": "cem.pair",  "title": "cem: pair on selection",  "category": "cem" }
+    ],
+    "keybindings": [
+      { "command": "cem.think", "key": "ctrl+alt+i", "mac": "alt+cmd+i", "when": "editorTextFocus" },
+      { "command": "cem.write", "key": "ctrl+alt+w", "mac": "alt+cmd+w", "when": "editorTextFocus" },
+      { "command": "cem.pair",  "key": "ctrl+alt+p", "mac": "alt+cmd+p", "when": "editorTextFocus" }
+    ],
+    "menus": {
+      "editor/context": [
+        { "submenu": "cem.editorContext", "group": "1_modification@99" }
+      ],
+      "cem.editorContext": [
+        { "command": "cem.think", "group": "cem@1" },
+        { "command": "cem.write", "group": "cem@2" },
+        { "command": "cem.pair",  "group": "cem@3" }
+      ]
+    },
+    "submenus": [
+      { "id": "cem.editorContext", "label": "cem" }
+    ],
+    "configuration": {
+      "title": "cem",
+      "properties": {
+        "cem.path": {
+          "type": "string",
+          "default": "cem",
+          "description": "Path to the cem binary. Leave as 'cem' if it's on PATH."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node20",
+    "watch": "npm run compile -- --sourcemap --watch",
+    "package": "npm run compile && vsce package --no-dependencies",
+    "publish": "npm run compile && vsce publish --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.2.0",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.5.0"
+  }
+}
